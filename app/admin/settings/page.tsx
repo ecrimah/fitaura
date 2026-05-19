@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
+import ImageUploadField from '@/components/admin/ImageUploadField';
+import type { StorageBucket } from '@/lib/storage/upload-image';
 
 type Category = 'general' | 'contact' | 'social' | 'theme' | 'commerce';
 
@@ -12,7 +14,11 @@ interface SettingRow {
   label: string;
   placeholder?: string;
   hint?: string;
-  type?: 'text' | 'textarea' | 'color' | 'url' | 'email';
+  type?: 'text' | 'textarea' | 'color' | 'url' | 'email' | 'image';
+  /** For `type === 'image'` — where the upload goes. */
+  bucket?: StorageBucket;
+  pathPrefix?: string;
+  aspect?: string;
 }
 
 // Definitive list of keys we expose in the admin UI — keeps the form clean
@@ -20,7 +26,26 @@ interface SettingRow {
 const FIELDS: Omit<SettingRow, 'value'>[] = [
   { key: 'site_name',         label: 'Site name',         category: 'general',  placeholder: 'FITAURA' },
   { key: 'site_tagline',      label: 'Site tagline',      category: 'general',  type: 'textarea', hint: 'Shown in metadata, SEO, and the brand story fallback.' },
-  { key: 'site_logo',         label: 'Logo URL',          category: 'general',  placeholder: '/fitaura-logo.png' },
+  {
+    key: 'site_logo',
+    label: 'Site logo',
+    category: 'general',
+    type: 'image',
+    bucket: 'media',
+    pathPrefix: 'site/logo',
+    aspect: 'aspect-[3/1]',
+    hint: 'Used in the header, footer, and admin sidebar. PNG with transparent background works best.',
+  },
+  {
+    key: 'site_favicon',
+    label: 'Favicon',
+    category: 'general',
+    type: 'image',
+    bucket: 'media',
+    pathPrefix: 'site/favicon',
+    aspect: 'aspect-square max-w-[160px]',
+    hint: 'Square mark used as the browser tab icon and PWA fallback. 512×512 recommended.',
+  },
 
   { key: 'contact_email',     label: 'Contact email',     category: 'contact',  type: 'email' },
   { key: 'contact_phone',     label: 'Contact phone',     category: 'contact',  placeholder: '+1 (587) 432-6761' },
@@ -142,41 +167,57 @@ export default function AdminSettingsPage() {
       <section className="bg-white border border-gray-200 rounded-lg p-6 space-y-5">
         {fieldsByCategory.map((field) => (
           <div key={field.key}>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">{field.label}</label>
-            {field.type === 'textarea' ? (
-              <textarea
-                rows={3}
+            {field.type === 'image' ? (
+              <ImageUploadField
+                label={field.label}
+                hint={field.hint}
                 value={values[field.key] ?? ''}
-                placeholder={field.placeholder}
-                onChange={(e) => updateValue(field.key, e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-sienna-500 focus:border-sienna-500 outline-none"
+                onChange={(url) => updateValue(field.key, url)}
+                bucket={field.bucket ?? 'media'}
+                pathPrefix={field.pathPrefix ?? 'site'}
+                aspectClassName={field.aspect ?? 'aspect-[3/1]'}
+                allowUrlFallback
+                disabled={saving}
               />
-            ) : field.type === 'color' ? (
-              <div className="flex items-center gap-3">
-                <input
-                  type="color"
-                  value={values[field.key] || '#D14F2B'}
-                  onChange={(e) => updateValue(field.key, e.target.value)}
-                  className="h-10 w-12 border border-gray-300 rounded cursor-pointer"
-                />
-                <input
-                  type="text"
-                  value={values[field.key] ?? ''}
-                  placeholder="#D14F2B"
-                  onChange={(e) => updateValue(field.key, e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm font-mono focus:ring-2 focus:ring-sienna-500 focus:border-sienna-500 outline-none"
-                />
-              </div>
             ) : (
-              <input
-                type={field.type ?? 'text'}
-                value={values[field.key] ?? ''}
-                placeholder={field.placeholder}
-                onChange={(e) => updateValue(field.key, e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-sienna-500 focus:border-sienna-500 outline-none"
-              />
+              <>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">{field.label}</label>
+                {field.type === 'textarea' ? (
+                  <textarea
+                    rows={3}
+                    value={values[field.key] ?? ''}
+                    placeholder={field.placeholder}
+                    onChange={(e) => updateValue(field.key, e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-sienna-500 focus:border-sienna-500 outline-none"
+                  />
+                ) : field.type === 'color' ? (
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={values[field.key] || '#D14F2B'}
+                      onChange={(e) => updateValue(field.key, e.target.value)}
+                      className="h-10 w-12 border border-gray-300 rounded cursor-pointer"
+                    />
+                    <input
+                      type="text"
+                      value={values[field.key] ?? ''}
+                      placeholder="#D14F2B"
+                      onChange={(e) => updateValue(field.key, e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm font-mono focus:ring-2 focus:ring-sienna-500 focus:border-sienna-500 outline-none"
+                    />
+                  </div>
+                ) : (
+                  <input
+                    type={field.type ?? 'text'}
+                    value={values[field.key] ?? ''}
+                    placeholder={field.placeholder}
+                    onChange={(e) => updateValue(field.key, e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-sienna-500 focus:border-sienna-500 outline-none"
+                  />
+                )}
+                {field.hint && <p className="text-xs text-gray-500 mt-1">{field.hint}</p>}
+              </>
             )}
-            {field.hint && <p className="text-xs text-gray-500 mt-1">{field.hint}</p>}
           </div>
         ))}
       </section>

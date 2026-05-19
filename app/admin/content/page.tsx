@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
+import ImageUploadField from '@/components/admin/ImageUploadField';
 
 type Tab = 'hero' | 'brand_story' | 'testimonials';
 
@@ -103,8 +104,6 @@ export default function AdminContentPage() {
   const [tab, setTab] = useState<Tab>('hero');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
-
   const [slides, setSlides] = useState<HeroSlideRow[]>([]);
   const [brandStory, setBrandStory] = useState<BrandStoryRow>(DEFAULT_BRAND_STORY);
   const [testimonials, setTestimonials] = useState<TestimonialRow[]>([]);
@@ -144,27 +143,6 @@ export default function AdminContentPage() {
   }, []);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
-
-  // -------------------------------------------------------------------------
-  // Image upload (shared between slides + story + testimonials)
-  // -------------------------------------------------------------------------
-  const handleImageUpload = async (file: File, prefix: string): Promise<string | null> => {
-    try {
-      setUploading(true);
-      const ext = file.name.split('.').pop();
-      const filePath = `cms/${prefix}-${Date.now()}.${ext}`;
-      const { error: uploadError } = await supabase.storage.from('products').upload(filePath, file);
-      if (uploadError) throw uploadError;
-      const { data: { publicUrl } } = supabase.storage.from('products').getPublicUrl(filePath);
-      return publicUrl;
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Upload failed';
-      alert('Error uploading image: ' + message);
-      return null;
-    } finally {
-      setUploading(false);
-    }
-  };
 
   // -------------------------------------------------------------------------
   // Hero slides
@@ -370,25 +348,17 @@ export default function AdminContentPage() {
           </div>
 
           <div className="mt-4">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Image</label>
-            <div className="flex items-center gap-4">
-              {brandStory.image_url && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={brandStory.image_url} alt="" className="w-24 h-28 object-cover rounded" />
-              )}
-              <input
-                type="file"
-                accept="image/*"
-                onChange={async (e) => {
-                  if (!e.target.files?.[0]) return;
-                  const url = await handleImageUpload(e.target.files[0], 'brand-story');
-                  if (url) setBrandStory({ ...brandStory, image_url: url });
-                }}
-                disabled={uploading}
-                className="text-sm"
-              />
-              <FormField label="" placeholder="Or paste an image URL" value={brandStory.image_url} onChange={(v) => setBrandStory({ ...brandStory, image_url: v })} className="flex-1" />
-            </div>
+            <ImageUploadField
+              label="Image"
+              hint="Editorial portrait shown alongside the brand story. Recommended 1200×1500 (4:5)."
+              value={brandStory.image_url}
+              onChange={(url) => setBrandStory({ ...brandStory, image_url: url })}
+              bucket="media"
+              pathPrefix="homepage/brand-story"
+              aspectClassName="aspect-[4/5]"
+              allowUrlFallback
+              disabled={saving}
+            />
           </div>
 
           <div className="mt-6 pt-6 border-t border-gray-200">
@@ -468,25 +438,17 @@ export default function AdminContentPage() {
             <FormField label="Secondary button link" value={editingSlide.metadata.secondary_href ?? ''} onChange={(v) => setEditingSlide({ ...editingSlide, metadata: { ...editingSlide.metadata, secondary_href: v } })} />
           </div>
           <div className="mt-4">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Background image</label>
-            <div className="flex items-center gap-4">
-              {editingSlide.image_url && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={editingSlide.image_url} alt="" className="w-24 h-28 object-cover rounded" />
-              )}
-              <input
-                type="file"
-                accept="image/*"
-                disabled={uploading}
-                onChange={async (e) => {
-                  if (!e.target.files?.[0]) return;
-                  const url = await handleImageUpload(e.target.files[0], 'hero');
-                  if (url) setEditingSlide({ ...editingSlide, image_url: url });
-                }}
-                className="text-sm"
-              />
-            </div>
-            <FormField label="" placeholder="Or paste an image URL" value={editingSlide.image_url} onChange={(v) => setEditingSlide({ ...editingSlide, image_url: v })} className="mt-2" />
+            <ImageUploadField
+              label="Background image"
+              hint="Full-bleed hero photo. Recommended 2400×1500 (16:10), focal subject on the right."
+              value={editingSlide.image_url}
+              onChange={(url) => setEditingSlide({ ...editingSlide, image_url: url })}
+              bucket="media"
+              pathPrefix="homepage/hero"
+              aspectClassName="aspect-[16/10]"
+              allowUrlFallback
+              disabled={saving}
+            />
           </div>
           <div className="flex items-center gap-3 mt-6 pt-4 border-t border-gray-200">
             <label className="flex items-center gap-2 text-sm">
@@ -513,7 +475,19 @@ export default function AdminContentPage() {
             <FormField label="Rating (1-5)" type="number" value={String(editingTestimonial.rating)} onChange={(v) => setEditingTestimonial({ ...editingTestimonial, rating: Math.min(5, Math.max(1, Number(v) || 5)) })} />
             <FormField label="Sort order" type="number" value={String(editingTestimonial.sort_order)} onChange={(v) => setEditingTestimonial({ ...editingTestimonial, sort_order: Number(v) || 0 })} />
           </div>
-          <FormField label="Avatar URL (optional)" value={editingTestimonial.avatar_url ?? ''} onChange={(v) => setEditingTestimonial({ ...editingTestimonial, avatar_url: v || null })} className="mt-4" />
+          <div className="mt-4">
+            <ImageUploadField
+              label="Avatar (optional)"
+              hint="Square headshot. Used in the homepage testimonial carousel."
+              value={editingTestimonial.avatar_url}
+              onChange={(url) => setEditingTestimonial({ ...editingTestimonial, avatar_url: url || null })}
+              bucket="avatars"
+              pathPrefix="testimonials"
+              aspectClassName="aspect-square max-w-[180px]"
+              allowUrlFallback
+              disabled={saving}
+            />
+          </div>
           <div className="flex items-center gap-3 mt-6 pt-4 border-t border-gray-200">
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={editingTestimonial.is_active} onChange={(e) => setEditingTestimonial({ ...editingTestimonial, is_active: e.target.checked })} />

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import ImageUploadField from '@/components/admin/ImageUploadField';
 
 type BlogStatus = 'draft' | 'published' | 'scheduled' | 'archived';
 
@@ -56,8 +57,6 @@ export default function AdminBlogPage() {
   const [filter, setFilter] = useState<'all' | BlogStatus>('all');
   const [editing, setEditing] = useState<BlogPost | null>(null);
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
-
   const fetchPosts = useCallback(async () => {
     setLoading(true);
     try {
@@ -75,23 +74,6 @@ export default function AdminBlogPage() {
   }, []);
 
   useEffect(() => { fetchPosts(); }, [fetchPosts]);
-
-  const handleImageUpload = async (file: File): Promise<string | null> => {
-    try {
-      setUploading(true);
-      const ext = file.name.split('.').pop();
-      const filePath = `blog/${Date.now()}.${ext}`;
-      const { error } = await supabase.storage.from('products').upload(filePath, file);
-      if (error) throw error;
-      const { data: { publicUrl } } = supabase.storage.from('products').getPublicUrl(filePath);
-      return publicUrl;
-    } catch (err: unknown) {
-      alert('Upload failed: ' + (err instanceof Error ? err.message : String(err)));
-      return null;
-    } finally {
-      setUploading(false);
-    }
-  };
 
   const handleSave = async () => {
     if (!editing) return;
@@ -274,33 +256,17 @@ export default function AdminBlogPage() {
 
               <Field label="Excerpt" textarea value={editing.excerpt} onChange={(v) => setEditing({ ...editing, excerpt: v })} placeholder="A short summary shown on the journal index." />
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Featured image</label>
-                <div className="flex items-center gap-4">
-                  {editing.featured_image && (
-                    // eslint-disable-next-line @next/next/no-img-element -- form preview
-                    <img src={editing.featured_image} alt="" className="w-24 h-16 object-cover rounded" />
-                  )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    disabled={uploading}
-                    onChange={async (e) => {
-                      if (!e.target.files?.[0]) return;
-                      const url = await handleImageUpload(e.target.files[0]);
-                      if (url) setEditing({ ...editing, featured_image: url });
-                    }}
-                    className="text-sm"
-                  />
-                </div>
-                <input
-                  type="text"
-                  value={editing.featured_image ?? ''}
-                  placeholder="Or paste an image URL"
-                  onChange={(e) => setEditing({ ...editing, featured_image: e.target.value || null })}
-                  className="mt-2 w-full px-3 py-2 border border-gray-300 rounded text-sm"
-                />
-              </div>
+              <ImageUploadField
+                label="Featured image"
+                hint="Recommended 1600×900 (16:9). Appears as the cover on the journal page and in social shares."
+                value={editing.featured_image}
+                onChange={(url) => setEditing({ ...editing, featured_image: url || null })}
+                bucket="blog"
+                pathPrefix="posts"
+                aspectClassName="aspect-[16/9]"
+                allowUrlFallback
+                disabled={saving}
+              />
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Content (HTML)</label>

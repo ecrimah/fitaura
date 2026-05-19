@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import ImageUploadField from '@/components/admin/ImageUploadField';
 
 interface BannerRow {
   id?: string;
@@ -202,6 +203,18 @@ export default function AdminBannersPage() {
                   </div>
                 </div>
               </div>
+
+              <ImageUploadField
+                label="Banner image (optional)"
+                hint="Used for mid-page banners. The top announcement bar uses colors only and ignores this image."
+                value={editing.image_url}
+                onChange={(url) => setEditing({ ...editing, image_url: url })}
+                bucket="media"
+                pathPrefix="banners"
+                aspectClassName="aspect-[3/1]"
+                allowUrlFallback
+                disabled={saving}
+              />
 
               <div className="grid grid-cols-2 gap-4">
                 <Field label="Button label (optional)" value={editing.button_text} onChange={(v) => setEditing({ ...editing, button_text: v })} />

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import ImageUploadField from '@/components/admin/ImageUploadField';
 
 export default function AdminCategoriesPage() {
   const [showAddModal, setShowAddModal] = useState(false);
@@ -70,36 +71,6 @@ export default function AdminCategoriesPage() {
       alert('Category deleted successfully');
     } catch (err: any) {
       alert('Error deleting: ' + (err?.message ?? 'Please try again.'));
-    }
-  };
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    try {
-      if (!e.target.files || e.target.files.length === 0) return;
-
-      setUploading(true);
-      const file = e.target.files[0];
-      const fileExt = file.name.split('.').pop();
-      const fileName = `cat-${Math.random()}.${fileExt}`;
-      const filePath = `${fileName}`;
-
-      // Upload to 'products' bucket for simplicity, or create a 'categories' bucket
-      const { error: uploadError } = await supabase.storage
-        .from('products')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('products')
-        .getPublicUrl(filePath);
-
-      setFormData({ ...formData, image_url: publicUrl });
-
-    } catch (error: any) {
-      alert('Error uploading image: ' + error.message);
-    } finally {
-      setUploading(false);
     }
   };
 
@@ -357,36 +328,17 @@ export default function AdminCategoriesPage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  Category Image
-                </label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-sienna-500 hover:bg-cream-100 transition-colors relative">
-                  {uploading ? (
-                    <div className="flex flex-col items-center">
-                      <i className="ri-loader-4-line animate-spin text-3xl mb-2 text-sienna-500"></i>
-                      <span className="text-sm font-medium text-gray-600">Uploading...</span>
-                    </div>
-                  ) : formData.image_url ? (
-                    <div className="relative group">
-                      <img src={formData.image_url} alt="Category" className="h-40 mx-auto object-contain rounded-lg shadow-sm" />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-lg">
-                        <label className="cursor-pointer bg-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-gray-100">
-                          Change Image
-                          <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-                        </label>
-                      </div>
-                    </div>
-                  ) : (
-                    <label className="cursor-pointer block">
-                      <i className="ri-upload-cloud-line text-4xl text-gray-400 mb-2 w-10 h-10 flex items-center justify-center mx-auto"></i>
-                      <p className="text-gray-700 font-medium">Click to upload image</p>
-                      <p className="text-sm text-gray-500 mt-1">Square (1:1) Recommended (e.g., 800x800px)</p>
-                      <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-                    </label>
-                  )}
-                </div>
-              </div>
+              <ImageUploadField
+                label="Category Image"
+                hint="Square (1:1) recommended — e.g. 800×800px."
+                value={formData.image_url}
+                onChange={(url) => setFormData({ ...formData, image_url: url })}
+                bucket="products"
+                pathPrefix="categories"
+                aspectClassName="aspect-square"
+                onUploadingChange={setUploading}
+                disabled={saving}
+              />
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
