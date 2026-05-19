@@ -34,7 +34,7 @@ export default function AdvancedCouponSystem({
       discount: 10, 
       type: 'percentage',
       minPurchase: 100,
-      description: '10% off on orders over GH₵100'
+      description: '10% off on orders over $100'
     },
     { 
       code: 'SAVE20', 
@@ -42,21 +42,21 @@ export default function AdvancedCouponSystem({
       type: 'percentage',
       minPurchase: 200,
       maxDiscount: 50,
-      description: '20% off (max GH₵50) on orders over GH₵200'
+      description: '20% off (max $50) on orders over $200'
     },
     { 
       code: 'FREE50', 
       discount: 50, 
       type: 'fixed',
       minPurchase: 500,
-      description: 'GH₵50 off on orders over GH₵500'
+      description: '$50 off on orders over $500'
     },
     { 
       code: 'NEWCUSTOMER', 
       discount: 15, 
       type: 'percentage',
       maxDiscount: 30,
-      description: '15% off (max GH₵30) for new customers'
+      description: '15% off (max $30) for new customers'
     }
   ];
 
@@ -70,7 +70,7 @@ export default function AdvancedCouponSystem({
     }
 
     if (coupon.minPurchase && subtotal < coupon.minPurchase) {
-      setError(`Minimum purchase of GH₵${coupon.minPurchase} required`);
+      setError(`Minimum purchase of $${coupon.minPurchase} required`);
       return;
     }
 
@@ -81,7 +81,7 @@ export default function AdvancedCouponSystem({
 
   const handleQuickApply = (coupon: Coupon) => {
     if (coupon.minPurchase && subtotal < coupon.minPurchase) {
-      setError(`Add GH₵${(coupon.minPurchase - subtotal).toFixed(2)} more to use this coupon`);
+      setError(`Add $${(coupon.minPurchase - subtotal).toFixed(2)} more to use this coupon`);
       return;
     }
     setError('');
@@ -106,11 +106,11 @@ export default function AdvancedCouponSystem({
                   setError('');
                 }}
                 placeholder="Enter code"
-                className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-sienna-500 focus:border-sienna-500 text-sm"
               />
               <button
                 onClick={handleApply}
-                className="bg-gray-900 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors whitespace-nowrap"
+                className="bg-sienna-500 hover:bg-sienna-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors whitespace-nowrap"
               >
                 Apply
               </button>
@@ -125,7 +125,7 @@ export default function AdvancedCouponSystem({
 
           <button
             onClick={() => setShowAvailable(!showAvailable)}
-            className="text-sm text-blue-700 hover:text-blue-900 font-medium flex items-center whitespace-nowrap"
+            className="text-sm text-sienna-500 hover:text-ink-900 font-medium flex items-center whitespace-nowrap"
           >
             <i className={`ri-arrow-${showAvailable ? 'up' : 'down'}-s-line mr-1`}></i>
             {showAvailable ? 'Hide' : 'View'} available coupons
@@ -142,25 +142,25 @@ export default function AdvancedCouponSystem({
                     key={coupon.code}
                     className={`bg-white rounded-lg p-4 border-2 transition-all ${
                       isEligible
-                        ? 'border-blue-200 hover:border-blue-300'
+                        ? 'border-sienna-100 hover:border-sienna-300'
                         : 'border-gray-200 opacity-60'
                     }`}
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center space-x-2">
-                        <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-lg font-bold text-sm">
+                        <span className="bg-sienna-50 text-sienna-600 px-3 py-1 rounded-lg font-bold text-sm">
                           {coupon.code}
                         </span>
                         {!isEligible && (
                           <span className="text-xs text-gray-500">
-                            Add GH₵{needed.toFixed(2)} more
+                            Add ${needed.toFixed(2)} more
                           </span>
                         )}
                       </div>
                       {isEligible && (
                         <button
                           onClick={() => handleQuickApply(coupon)}
-                          className="text-blue-700 hover:text-blue-900 font-semibold text-sm whitespace-nowrap"
+                          className="text-sienna-500 hover:text-ink-900 font-semibold text-sm whitespace-nowrap"
                         >
                           Apply
                         </button>
@@ -174,18 +174,18 @@ export default function AdvancedCouponSystem({
           )}
         </>
       ) : (
-        <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+        <div className="bg-cream-100 border-2 border-sienna-100 rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center space-x-2 mb-1">
-                <i className="ri-price-tag-3-fill text-blue-700"></i>
-                <span className="font-bold text-blue-800">{appliedCoupon.code}</span>
+                <i className="ri-price-tag-3-fill text-sienna-500"></i>
+                <span className="font-bold text-sienna-600">{appliedCoupon.code}</span>
               </div>
-              <p className="text-sm text-blue-700">{appliedCoupon.description}</p>
+              <p className="text-sm text-sienna-500">{appliedCoupon.description}</p>
             </div>
             <button
               onClick={onRemove}
-              className="w-8 h-8 flex items-center justify-center text-blue-700 hover:text-blue-900 transition-colors"
+              className="w-8 h-8 flex items-center justify-center text-sienna-500 hover:text-ink-900 transition-colors"
             >
               <i className="ri-close-line text-xl"></i>
             </button>

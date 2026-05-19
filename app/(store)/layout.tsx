@@ -7,7 +7,6 @@ import MobileBottomNav from '@/components/MobileBottomNav';
 import ScrollToTop from '@/components/ScrollToTop';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import NavigationProgress from '@/components/NavigationProgress';
-import CookieConsent from '@/components/CookieConsent';
 import { CMSProvider } from '@/context/CMSContext';
 
 // Lazy-load non-critical components
@@ -33,7 +32,7 @@ export default function StoreLayout({
         <NavigationProgress />
       </Suspense>
       <ScrollToTop />
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-cream-50">
         <PWASplash />
         <PWAInstaller />
         <Header />
@@ -51,7 +50,6 @@ export default function StoreLayout({
         <NetworkStatusMonitor />
         <UpdatePrompt />
         <LiveSalesNotification />
-        <CookieConsent />
       </div>
     </CMSProvider>
   );

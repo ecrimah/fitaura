@@ -13,7 +13,7 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState([
     {
       title: 'Total Revenue',
-      value: 'GH₵ 0.00',
+      value: '$ 0.00',
       change: '0%', // Placeholder trend
       trend: 'up',
       icon: 'ri-money-dollar-circle-line',
@@ -37,7 +37,7 @@ export default function AdminDashboard() {
     },
     {
       title: 'Avg Order Value',
-      value: 'GH₵ 0.00',
+      value: '$ 0.00',
       change: '0%',
       trend: 'up',
       icon: 'ri-line-chart-line',
@@ -102,7 +102,7 @@ export default function AdminDashboard() {
         setStats([
           {
             title: 'Total Revenue',
-            value: `GH₵ ${totalRevenue.toFixed(2)}`,
+            value: `$ ${totalRevenue.toFixed(2)}`,
             change: '+0%', // Dynamic change requires date filtering logic which is complex
             trend: 'up',
             icon: 'ri-money-dollar-circle-line',
@@ -126,7 +126,7 @@ export default function AdminDashboard() {
           },
           {
             title: 'Avg Order Value',
-            value: `GH₵ ${avgOrderValue.toFixed(2)}`,
+            value: `$ ${avgOrderValue.toFixed(2)}`,
             change: '+0%',
             trend: 'up',
             icon: 'ri-line-chart-line',
@@ -204,9 +204,9 @@ export default function AdminDashboard() {
 
   const statusColors: any = {
     'pending': 'bg-amber-100 text-amber-700',
-    'processing': 'bg-blue-100 text-blue-700',
+    'processing': 'bg-sienna-50 text-sienna-500',
     'shipped': 'bg-purple-100 text-purple-700',
-    'delivered': 'bg-blue-100 text-blue-700',
+    'delivered': 'bg-sienna-50 text-sienna-500',
     'cancelled': 'bg-red-100 text-red-700'
   };
 
@@ -250,7 +250,7 @@ export default function AdminDashboard() {
                 <div className={`w-12 h-12 flex items-center justify-center bg-${stat.color}-100 text-${stat.color}-700 rounded-lg`}>
                   <i className={`${stat.icon} text-2xl`}></i>
                 </div>
-                <span className={`text-sm font-semibold text-blue-700`}>
+                <span className={`text-sm font-semibold text-sienna-500`}>
                   {stat.change}
                 </span>
               </div>
@@ -266,7 +266,7 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-gray-900">Revenue Trend</h2>
               <select
-                className="bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2"
+                className="bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-lg focus:ring-sienna-500 focus:border-sienna-500 block p-2"
                 value={dateRange}
                 onChange={(e) => setDateRange(e.target.value)}
               >
@@ -285,10 +285,10 @@ export default function AdminDashboard() {
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} tickFormatter={(value) => `GH₵${value}`} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} tickFormatter={(value) => `$${value}`} />
                   <Tooltip
                     contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                    formatter={(value) => [`GH₵${(value as number)?.toFixed(2) ?? '0.00'}`, 'Revenue']}
+                    formatter={(value) => [`$${(value as number)?.toFixed(2) ?? '0.00'}`, 'Revenue']}
                   />
                   <Area type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
                 </AreaChart>
@@ -299,27 +299,27 @@ export default function AdminDashboard() {
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
             <div className="space-y-3">
-              <Link href="/admin/products/new" className="flex items-center justify-between p-4 bg-gray-50 hover:bg-blue-50 text-gray-700 hover:text-blue-700 rounded-lg transition-colors group">
+              <Link href="/admin/products/new" className="flex items-center justify-between p-4 bg-gray-50 hover:bg-cream-100 text-gray-700 hover:text-sienna-500 rounded-lg transition-colors group">
                 <div className="flex items-center font-medium">
-                  <span className="w-8 h-8 rounded-full bg-white flex items-center justify-center mr-3 group-hover:bg-blue-100 transition-colors shadow-sm">
+                  <span className="w-8 h-8 rounded-full bg-white flex items-center justify-center mr-3 group-hover:bg-sienna-50 transition-colors shadow-sm">
                     <i className="ri-add-line"></i>
                   </span>
                   Add Product
                 </div>
                 <i className="ri-arrow-right-line"></i>
               </Link>
-              <Link href="/admin/pos" className="flex items-center justify-between p-4 bg-gray-50 hover:bg-blue-50 text-gray-700 hover:text-blue-700 rounded-lg transition-colors group">
+              <Link href="/admin/pos" className="flex items-center justify-between p-4 bg-gray-50 hover:bg-cream-100 text-gray-700 hover:text-sienna-500 rounded-lg transition-colors group">
                 <div className="flex items-center font-medium">
-                  <span className="w-8 h-8 rounded-full bg-white flex items-center justify-center mr-3 group-hover:bg-blue-100 transition-colors shadow-sm">
+                  <span className="w-8 h-8 rounded-full bg-white flex items-center justify-center mr-3 group-hover:bg-sienna-50 transition-colors shadow-sm">
                     <i className="ri-computer-line"></i>
                   </span>
                   Open POS
                 </div>
                 <i className="ri-arrow-right-line"></i>
               </Link>
-              <Link href="/admin/orders" className="flex items-center justify-between p-4 bg-gray-50 hover:bg-blue-50 text-gray-700 hover:text-blue-700 rounded-lg transition-colors group">
+              <Link href="/admin/orders" className="flex items-center justify-between p-4 bg-gray-50 hover:bg-cream-100 text-gray-700 hover:text-sienna-500 rounded-lg transition-colors group">
                 <div className="flex items-center font-medium">
-                  <span className="w-8 h-8 rounded-full bg-white flex items-center justify-center mr-3 group-hover:bg-blue-100 transition-colors shadow-sm">
+                  <span className="w-8 h-8 rounded-full bg-white flex items-center justify-center mr-3 group-hover:bg-sienna-50 transition-colors shadow-sm">
                     <i className="ri-file-list-line"></i>
                   </span>
                   Manage Orders
@@ -334,7 +334,7 @@ export default function AdminDashboard() {
           <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 overflow-hidden">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-gray-900">Recent Orders</h2>
-              <Link href="/admin/orders" className="text-blue-700 hover:text-blue-800 font-medium text-sm whitespace-nowrap cursor-pointer">
+              <Link href="/admin/orders" className="text-sienna-500 hover:text-sienna-600 font-medium text-sm whitespace-nowrap cursor-pointer">
                 View All <i className="ri-arrow-right-line ml-1"></i>
               </Link>
             </div>
@@ -357,7 +357,7 @@ export default function AdminDashboard() {
                     {recentOrders.map((order) => (
                       <tr key={order.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                         <td className="py-4 px-4">
-                          <Link href={`/admin/orders/${order.id}`} className="text-blue-700 hover:text-blue-800 font-medium whitespace-nowrap cursor-pointer">
+                          <Link href={`/admin/orders/${order.id}`} className="text-sienna-500 hover:text-sienna-600 font-medium whitespace-nowrap cursor-pointer">
                             {order.displayId}
                           </Link>
                         </td>
@@ -366,7 +366,7 @@ export default function AdminDashboard() {
                           <p className="text-sm text-gray-500">{order.email}</p>
                         </td>
                         <td className="py-4 px-4 text-gray-700 whitespace-nowrap">{order.date}</td>
-                        <td className="py-4 px-4 font-semibold text-gray-900 whitespace-nowrap">GH₵ {order.total.toFixed(2)}</td>
+                        <td className="py-4 px-4 font-semibold text-gray-900 whitespace-nowrap">$ {order.total.toFixed(2)}</td>
                         <td className="py-4 px-4">
                           <span className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${statusColors[order.status] || 'bg-gray-100'}`}>
                             {order.status === 'shipped' ? 'Packaged' : order.status.charAt(0).toUpperCase() + order.status.slice(1)}
@@ -401,7 +401,7 @@ export default function AdminDashboard() {
                   ))}
                 </div>
               )}
-              <Link href="/admin/products?filter=low-stock" className="block text-center mt-4 text-blue-700 hover:text-blue-800 font-medium text-sm whitespace-nowrap cursor-pointer">
+              <Link href="/admin/products?filter=low-stock" className="block text-center mt-4 text-sienna-500 hover:text-sienna-600 font-medium text-sm whitespace-nowrap cursor-pointer">
                 View All Products <i className="ri-arrow-right-line ml-1"></i>
               </Link>
             </div>
@@ -411,7 +411,7 @@ export default function AdminDashboard() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 overflow-hidden">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-gray-900">Products</h2>
-            <Link href="/admin/products" className="text-blue-700 hover:text-blue-800 font-medium text-sm whitespace-nowrap cursor-pointer">
+            <Link href="/admin/products" className="text-sienna-500 hover:text-sienna-600 font-medium text-sm whitespace-nowrap cursor-pointer">
               View All <i className="ri-arrow-right-line ml-1"></i>
             </Link>
           </div>
@@ -425,7 +425,7 @@ export default function AdminDashboard() {
                 <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">{product.name}</h3>
                 <div className="mt-3 pt-3 border-t border-gray-200 flex items-center justify-between">
                   <span className="text-sm text-gray-600">Stock: {product.stock}</span>
-                  <Link href={`/admin/products/${product.id}`} className="text-blue-700 hover:text-blue-800 text-sm font-medium whitespace-nowrap cursor-pointer">
+                  <Link href={`/admin/products/${product.id}`} className="text-sienna-500 hover:text-sienna-600 text-sm font-medium whitespace-nowrap cursor-pointer">
                     Edit <i className="ri-arrow-right-line ml-1"></i>
                   </Link>
                 </div>

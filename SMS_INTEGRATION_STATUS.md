@@ -1,6 +1,5 @@
 # SMS & Payment Integration Status Report
 
-**Last Updated:** February 5, 2026
 **Status:** Fixed and Ready for Production
 
 ## 1. Overview
@@ -19,7 +18,7 @@ The SMS notification system has been updated with improved security, better erro
 | Variable | Purpose | Required |
 |----------|---------|----------|
 | `MOOLRE_API_KEY` | VAS Key for SMS sending | Yes |
-| `MOOLRE_API_USER` | User ID (e.g., `doctorbarns`) | Yes |
+| `MOOLRE_API_USER` | Moolre user ID | Yes |
 | `MOOLRE_API_PUBKEY` | Public key for payment | Yes |
 
 ### Email (Optional but Recommended)
@@ -38,7 +37,7 @@ The SMS notification system has been updated with improved security, better erro
 ### App Configuration
 | Variable | Purpose | Required |
 |----------|---------|----------|
-| `NEXT_PUBLIC_APP_URL` | Production URL (`https://discountdiscoveryzone.com/`) | Yes |
+| `NEXT_PUBLIC_APP_URL` | Production URL (e.g. `https://shopfitaura.com/`) | Yes |
 
 ## 3. Important Setup Steps
 
@@ -51,7 +50,7 @@ The SMS notification system has been updated with improved security, better erro
 ### Step 2: Verify Moolre Callback URL
 The callback URL configured during payment should be:
 ```
-https://discountdiscoveryzone.com/api/payment/moolre/callback
+https://shopfitaura.com/api/payment/moolre/callback
 ```
 
 **Note:** This URL is automatically set from the `NEXT_PUBLIC_APP_URL` environment variable.
@@ -96,16 +95,7 @@ If automatic notification fails:
 3. **Reduced PII Logging** - Phone numbers and payment data now masked
 4. **Error Messages Sanitized** - No stack traces exposed to clients
 
-## 7. Files Modified
-
-- `lib/notifications.ts` - Improved logging, configurable email sender
-- `app/api/payment/moolre/callback/route.ts` - Better error handling
-- `app/api/notifications/route.ts` - Added authentication
-- `app/admin/layout.tsx` - Role-based access control
-- `app/admin/orders/[id]/OrderDetailClient.tsx` - Added resend notification feature
-- `app/admin/orders/page.tsx` - Auth tokens for bulk updates
-
-## 8. Testing Checklist
+## 7. Testing Checklist
 
 - [ ] Add `SUPABASE_SERVICE_ROLE_KEY` to Vercel
 - [ ] Test SMS via Admin → SMS Debugger

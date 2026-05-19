@@ -3,63 +3,63 @@ import Link from 'next/link';
 export default function ShippingPage() {
   const deliveryOptions = [
     {
-      type: 'Standard Delivery',
-      time: '2-5 Business Days',
-      cost: 'GHS 20',
-      description: 'Perfect for regular orders with no rush',
+      type: 'Standard Shipping',
+      time: '3-7 Business Days',
+      cost: '$8 CAD',
+      description: 'Tracked Canada Post delivery across Canada.',
       icon: 'ri-truck-line'
     },
     {
-      type: 'Express Delivery',
-      time: 'Next Day',
-      cost: 'GHS 40',
-      description: 'Available for Accra & Kumasi orders placed before 2pm',
+      type: 'Express Shipping',
+      time: '1-2 Business Days',
+      cost: '$18 CAD',
+      description: 'Priority delivery for orders placed before 2pm MT.',
       icon: 'ri-rocket-line'
     },
     {
-      type: 'Store Pickup',
-      time: 'Same Day',
-      cost: 'FREE',
-      description: 'Collect from our Accra location',
+      type: 'Calgary Local',
+      time: 'Same / Next Day',
+      cost: '$6 CAD',
+      description: 'Local delivery within the Calgary metro area.',
       icon: 'ri-store-2-line'
     }
   ];
 
   const zones = [
     {
-      zone: 'Zone 1 - Accra Metro',
-      areas: 'East Legon, Osu, Labone, Airport, Dzorwulu, Cantonments, Adabraka, Tema',
+      zone: 'Zone 1',
+      areas: 'Calgary metro area',
       standard: '1-2 days',
-      express: 'Next day'
+      express: 'Same day'
     },
     {
-      zone: 'Zone 2 - Greater Accra',
-      areas: 'Madina, Legon, Haatso, Achimota, Dansoman, Spintex, Teshie, Kasoa',
+      zone: 'Zone 2',
+      areas: 'Alberta, BC, Saskatchewan',
       standard: '2-3 days',
       express: 'Next day'
     },
     {
-      zone: 'Zone 3 - Major Cities',
-      areas: 'Kumasi, Takoradi, Cape Coast, Tamale, Sunyani, Ho, Koforidua',
-      standard: '3-4 days',
+      zone: 'Zone 3',
+      areas: 'Manitoba, Ontario, Quebec',
+      standard: '3-5 days',
       express: '1-2 days'
     },
     {
-      zone: 'Zone 4 - Other Areas',
-      areas: 'All other locations within Ghana',
-      standard: '4-5 days',
-      express: 'Not available'
+      zone: 'Zone 4',
+      areas: 'Maritimes, Territories',
+      standard: '5-7 days',
+      express: '2-3 days'
     }
   ];
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="bg-gradient-to-br from-blue-50 via-white to-amber-50 py-16">
+      <div className="bg-gradient-to-br from-cream-100 via-white to-amber-50 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-5xl font-bold text-gray-900 mb-6">Shipping & Delivery</h1>
             <p className="text-xl text-gray-600 leading-relaxed">
-              Fast, reliable delivery across Ghana. Free standard shipping on orders over GHS 300.
+              Fast, reliable delivery across Canada. Free standard shipping on orders over $120 CAD.
             </p>
           </div>
         </div>
@@ -70,12 +70,12 @@ export default function ShippingPage() {
           <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">Delivery Options</h2>
           <div className="grid md:grid-cols-3 gap-6">
             {deliveryOptions.map((option, index) => (
-              <div key={index} className="bg-white border-2 border-gray-200 p-8 rounded-2xl hover:border-blue-500 hover:shadow-lg transition-all">
-                <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center mb-6">
-                  <i className={`${option.icon} text-2xl text-blue-700`}></i>
+              <div key={index} className="bg-white border-2 border-gray-200 p-8 rounded-2xl hover:border-sienna-500 hover:shadow-lg transition-all">
+                <div className="w-14 h-14 bg-sienna-50 rounded-full flex items-center justify-center mb-6">
+                  <i className={`${option.icon} text-2xl text-sienna-500`}></i>
                 </div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">{option.type}</h3>
-                <div className="text-blue-700 font-bold text-xl mb-2">{option.cost}</div>
+                <div className="text-sienna-500 font-bold text-xl mb-2">{option.cost}</div>
                 <div className="text-gray-600 font-medium mb-4">{option.time}</div>
                 <p className="text-gray-600 leading-relaxed">{option.description}</p>
               </div>
@@ -83,13 +83,13 @@ export default function ShippingPage() {
           </div>
         </div>
 
-        <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-8 mb-16 text-center">
-          <div className="w-16 h-16 bg-blue-700 rounded-full flex items-center justify-center mx-auto mb-4">
+        <div className="bg-cream-100 border-2 border-sienna-100 rounded-2xl p-8 mb-16 text-center">
+          <div className="w-16 h-16 bg-sienna-500 rounded-full flex items-center justify-center mx-auto mb-4">
             <i className="ri-gift-line text-3xl text-white"></i>
           </div>
           <h3 className="text-2xl font-bold text-gray-900 mb-3">Free Standard Shipping</h3>
           <p className="text-lg text-gray-600">
-            Spend GHS 300 or more and get <span className="font-bold text-blue-700">FREE standard delivery</span> anywhere in Ghana
+            Spend $120 CAD or more and get <span className="font-bold text-sienna-500">FREE standard delivery</span> anywhere in Canada
           </p>
         </div>
 
@@ -126,8 +126,8 @@ export default function ShippingPage() {
             <h2 className="text-3xl font-bold text-gray-900 mb-6">How Shipping Works</h2>
             <div className="space-y-6">
               <div className="flex gap-4">
-                <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                  <span className="font-bold text-blue-700">1</span>
+                <div className="flex-shrink-0 w-10 h-10 bg-sienna-50 rounded-full flex items-center justify-center">
+                  <span className="font-bold text-sienna-500">1</span>
                 </div>
                 <div>
                   <h3 className="font-bold text-gray-900 mb-2">Order Processing</h3>
@@ -138,8 +138,8 @@ export default function ShippingPage() {
               </div>
 
               <div className="flex gap-4">
-                <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                  <span className="font-bold text-blue-700">2</span>
+                <div className="flex-shrink-0 w-10 h-10 bg-sienna-50 rounded-full flex items-center justify-center">
+                  <span className="font-bold text-sienna-500">2</span>
                 </div>
                 <div>
                   <h3 className="font-bold text-gray-900 mb-2">Dispatch</h3>
@@ -150,8 +150,8 @@ export default function ShippingPage() {
               </div>
 
               <div className="flex gap-4">
-                <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                  <span className="font-bold text-blue-700">3</span>
+                <div className="flex-shrink-0 w-10 h-10 bg-sienna-50 rounded-full flex items-center justify-center">
+                  <span className="font-bold text-sienna-500">3</span>
                 </div>
                 <div>
                   <h3 className="font-bold text-gray-900 mb-2">Track Your Order</h3>
@@ -162,8 +162,8 @@ export default function ShippingPage() {
               </div>
 
               <div className="flex gap-4">
-                <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                  <span className="font-bold text-blue-700">4</span>
+                <div className="flex-shrink-0 w-10 h-10 bg-sienna-50 rounded-full flex items-center justify-center">
+                  <span className="font-bold text-sienna-500">4</span>
                 </div>
                 <div>
                   <h3 className="font-bold text-gray-900 mb-2">Delivery</h3>
@@ -180,7 +180,7 @@ export default function ShippingPage() {
             <div className="bg-gray-50 rounded-2xl p-6 space-y-6">
               <div>
                 <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
-                  <i className="ri-time-line text-blue-700"></i>
+                  <i className="ri-time-line text-sienna-500"></i>
                   Cut-off Times
                 </h3>
                 <p className="text-gray-600 leading-relaxed text-sm">
@@ -190,7 +190,7 @@ export default function ShippingPage() {
 
               <div>
                 <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
-                  <i className="ri-calendar-line text-blue-700"></i>
+                  <i className="ri-calendar-line text-sienna-500"></i>
                   Business Days
                 </h3>
                 <p className="text-gray-600 leading-relaxed text-sm">
@@ -200,7 +200,7 @@ export default function ShippingPage() {
 
               <div>
                 <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
-                  <i className="ri-phone-line text-blue-700"></i>
+                  <i className="ri-phone-line text-sienna-500"></i>
                   Delivery Contact
                 </h3>
                 <p className="text-gray-600 leading-relaxed text-sm">
@@ -210,7 +210,7 @@ export default function ShippingPage() {
 
               <div>
                 <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
-                  <i className="ri-home-line text-blue-700"></i>
+                  <i className="ri-home-line text-sienna-500"></i>
                   Failed Deliveries
                 </h3>
                 <p className="text-gray-600 leading-relaxed text-sm">
@@ -220,7 +220,7 @@ export default function ShippingPage() {
 
               <div>
                 <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
-                  <i className="ri-secure-payment-line text-blue-700"></i>
+                  <i className="ri-secure-payment-line text-sienna-500"></i>
                   Package Security
                 </h3>
                 <p className="text-gray-600 leading-relaxed text-sm">
@@ -238,8 +238,8 @@ export default function ShippingPage() {
           </p>
           <div className="grid md:grid-cols-4 gap-6">
             <div className="text-center">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <i className="ri-checkbox-circle-line text-2xl text-blue-700"></i>
+              <div className="w-12 h-12 bg-sienna-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                <i className="ri-checkbox-circle-line text-2xl text-sienna-500"></i>
               </div>
               <p className="font-medium text-gray-900">Order Confirmed</p>
             </div>
@@ -256,8 +256,8 @@ export default function ShippingPage() {
               <p className="font-medium text-gray-900">Out for Delivery</p>
             </div>
             <div className="text-center">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <i className="ri-gift-line text-2xl text-blue-700"></i>
+              <div className="w-12 h-12 bg-sienna-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                <i className="ri-gift-line text-2xl text-sienna-500"></i>
               </div>
               <p className="font-medium text-gray-900">Delivered</p>
             </div>
@@ -265,7 +265,7 @@ export default function ShippingPage() {
           <div className="mt-8 text-center">
             <Link
               href="/order-tracking"
-              className="inline-flex items-center gap-2 bg-blue-700 text-white px-8 py-4 rounded-full font-medium hover:bg-blue-800 transition-colors whitespace-nowrap"
+              className="inline-flex items-center gap-2 bg-sienna-500 text-white px-8 py-4 rounded-full font-medium hover:bg-sienna-600 transition-colors whitespace-nowrap"
             >
               <i className="ri-map-pin-line"></i>
               Track Your Order
@@ -273,21 +273,21 @@ export default function ShippingPage() {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-blue-700 to-blue-900 rounded-2xl p-8 text-white text-center">
+        <div className="bg-gradient-to-br from-sienna-500 to-ink-900 rounded-2xl p-8 text-white text-center">
           <h2 className="text-3xl font-bold mb-4">Need Help with Your Delivery?</h2>
-          <p className="text-blue-100 mb-6 leading-relaxed">
+          <p className="text-sienna-50 mb-6 leading-relaxed">
             Questions about shipping costs, delivery times, or tracking? Our customer service team is here to help.
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
             <Link
               href="/contact"
-              className="inline-flex items-center gap-2 bg-white text-blue-700 px-6 py-3 rounded-full font-medium hover:bg-blue-50 transition-colors whitespace-nowrap"
+              className="inline-flex items-center gap-2 bg-white text-sienna-500 px-6 py-3 rounded-full font-medium hover:bg-cream-100 transition-colors whitespace-nowrap"
             >
               Contact Support
             </Link>
             <Link
               href="/faqs"
-              className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-full font-medium hover:bg-blue-500 transition-colors whitespace-nowrap"
+              className="inline-flex items-center gap-2 bg-sienna-500 text-white px-6 py-3 rounded-full font-medium hover:bg-sienna-500 transition-colors whitespace-nowrap"
             >
               View FAQs
             </Link>

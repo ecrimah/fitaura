@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { StructuredData, generateFAQSchema } from '@/components/SEOHead';
 
 export default function FAQsPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -25,7 +26,7 @@ export default function FAQsPage() {
     {
       category: 'orders',
       question: 'Can I modify or cancel my order?',
-      answer: 'You can modify or cancel your order within 1 hour of placing it. Contact our customer service immediately via WhatsApp 055 416 9992 or Call 054 501 0949 or email tiwaperfumestyle@gmail.com. Once an order is processed, modifications may not be possible.'
+      answer: 'You can modify or cancel your order within 1 hour of placing it. Contact us immediately using the contact details in the footer. Once an order is processed, modifications may not be possible.'
     },
     {
       category: 'orders',
@@ -40,17 +41,17 @@ export default function FAQsPage() {
     {
       category: 'shipping',
       question: 'What are your delivery times?',
-      answer: 'Standard delivery takes 2-5 business days within Ghana. Express delivery (next-day) is available for Accra and Kumasi. Orders placed before 2pm are dispatched same day. Remote areas may take 5-7 business days.'
+      answer: 'Standard shipping takes 3-7 business days across Canada. Express delivery (1-2 business days) is available for major Canadian cities. Orders placed before 2pm MT are dispatched same day. Northern and remote areas may take 5-10 business days.'
     },
     {
       category: 'shipping',
       question: 'How much does shipping cost?',
-      answer: 'Standard shipping costs GHS 20. Express delivery costs GHS 40. Orders over GHS 300 qualify for FREE standard shipping. Store pickup is also available at no charge from our Accra location.'
+      answer: 'Standard shipping costs $8 CAD. Express delivery costs $18 CAD. Orders over $120 CAD qualify for FREE standard shipping. Calgary local delivery is also available for $6 CAD.'
     },
     {
       category: 'shipping',
-      question: 'Do you ship outside Ghana?',
-      answer: 'Currently, we only ship within Ghana. We\'re working on expanding to neighbouring West African countries. Sign up for our newsletter to be notified when international shipping becomes available.'
+      question: 'Do you ship outside Canada?',
+      answer: 'We currently ship across Canada and are working on international shipping (starting with the US). Sign up for our newsletter to be notified when international shipping becomes available.'
     },
     {
       category: 'shipping',
@@ -70,7 +71,7 @@ export default function FAQsPage() {
     {
       category: 'returns',
       question: 'Who pays for return shipping?',
-      answer: 'If you\'re returning due to a defect or our error, we cover return shipping. For change-of-mind returns, customers pay return shipping costs (GHS 15 standard rate). Free shipping on returns for defective items.'
+      answer: 'If you\'re returning due to a defect or our error, we cover return shipping. For change-of-mind returns, customers pay return shipping costs (around $10 CAD standard rate). Free shipping on returns for defective items.'
     },
     {
       category: 'returns',
@@ -80,27 +81,27 @@ export default function FAQsPage() {
     {
       category: 'payment',
       question: 'What payment methods do you accept?',
-      answer: 'We accept MOMO (Mobile Money), Instant Bank Transfer, Cash (in store only), and Visa Card payment. Please note we do not accept payment on delivery.'
+      answer: 'We accept all major credit and debit cards (Visa, Mastercard, American Express, Discover), Apple Pay, Google Pay and Stripe Link. Cash is accepted in store only. We do not offer payment on delivery — payment must be completed before dispatch.'
     },
     {
       category: 'payment',
       question: 'Is it safe to use my credit card on your site?',
-      answer: 'Absolutely. We use industry-standard SSL encryption and partner with Moolre for secure payment processing. We never store your full card details on our servers. All transactions are PCI-DSS compliant.'
+      answer: 'Absolutely. All payments are processed by Stripe — the same gateway trusted by Shopify, Amazon and Google. Your card details never touch the FITAURA servers and every transaction is PCI-DSS Level 1 compliant with end-to-end TLS encryption.'
     },
     {
       category: 'payment',
       question: 'Can I pay in instalments?',
-      answer: 'Yes! We offer payment plans through our partners for purchases over GHS 500. Select "Pay in Instalments" at checkout to see available options. Approval is instant and no interest is charged.'
+      answer: 'Yes! We offer payment plans through our partners (Shop Pay, Afterpay) for purchases over $200 CAD. Select "Pay in Instalments" at checkout to see available options. Approval is instant and no interest is charged on eligible plans.'
     },
     {
       category: 'payment',
       question: 'When will my payment be charged?',
-      answer: 'For card and mobile money payments, you\'re charged immediately. We do not accept payment on delivery — payment must be completed before dispatch. If an item is out of stock, we\'ll refund you within 24 hours.'
+      answer: 'Card payments are authorised and captured immediately at checkout. We do not accept payment on delivery — payment must be completed before dispatch. If an item is out of stock, we\'ll refund you within 24 hours.'
     },
     {
       category: 'payment',
       question: 'How do refunds work?',
-      answer: 'Refunds are processed to your original payment method within 5-7 business days after we receive and inspect your return. For mobile money refunds, ensure you provide correct details. You\'ll receive confirmation via email.'
+      answer: 'Refunds are processed to your original payment method within 5-10 business days after we receive and inspect your return. Refunded amounts appear on your card statement once Stripe and your bank confirm — you\'ll receive an email the moment the refund is initiated.'
     },
     {
       category: 'account',
@@ -125,7 +126,7 @@ export default function FAQsPage() {
     {
       category: 'account',
       question: 'What are loyalty points and how do they work?',
-      answer: 'Earn 1 point for every GHS 10 spent. 100 points = GHS 10 discount on your next purchase. Points are automatically added to your account after each order. Check your points balance in your account dashboard.'
+      answer: 'Earn 1 point for every $1 CAD spent. 100 points = $10 CAD discount on your next purchase. Points are automatically added to your account after each order. Check your points balance in your account dashboard.'
     }
   ];
 
@@ -137,9 +138,14 @@ export default function FAQsPage() {
     return matchesCategory && matchesSearch;
   });
 
+  // Emit FAQPage JSON-LD covering the full FAQ list (not the filtered one) so
+  // Google's rich-results crawler sees every Q&A regardless of UI state.
+  const faqSchema = generateFAQSchema(faqs.map((f) => ({ question: f.question, answer: f.answer })));
+
   return (
     <div className="min-h-screen bg-white">
-      <div className="bg-gradient-to-br from-blue-50 via-white to-amber-50 py-16">
+      <StructuredData data={faqSchema} />
+      <div className="bg-gradient-to-br from-cream-100 via-white to-amber-50 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
@@ -155,7 +161,7 @@ export default function FAQsPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search for answers..."
-                className="w-full pl-12 pr-4 py-4 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm shadow-lg"
+                className="w-full pl-12 pr-4 py-4 border border-gray-300 rounded-full focus:ring-2 focus:ring-sienna-500 focus:border-transparent text-sm shadow-lg"
               />
               <i className="ri-search-line absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl"></i>
             </div>
@@ -171,7 +177,7 @@ export default function FAQsPage() {
               onClick={() => setActiveCategory(category.id)}
               className={`flex items-center gap-2 px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap ${
                 activeCategory === category.id
-                  ? 'bg-blue-700 text-white shadow-lg'
+                  ? 'bg-sienna-500 text-white shadow-lg'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
@@ -211,32 +217,30 @@ export default function FAQsPage() {
         )}
       </div>
 
-      <div className="bg-gradient-to-br from-blue-700 to-blue-900 py-16">
+      <div className="bg-gradient-to-br from-sienna-500 to-ink-900 py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6">
             <i className="ri-customer-service-2-line text-3xl text-white"></i>
           </div>
           <h2 className="text-3xl font-bold text-white mb-4">Still Have Questions?</h2>
-          <p className="text-xl text-blue-100 mb-8 leading-relaxed">
+          <p className="text-xl text-sienna-50 mb-8 leading-relaxed">
             Our customer service team is ready to help. Contact us and we'll respond within 24 hours.
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
             <Link
               href="/contact"
-              className="inline-flex items-center gap-2 bg-white text-blue-700 px-8 py-4 rounded-full font-medium hover:bg-blue-50 transition-colors whitespace-nowrap"
+              className="inline-flex items-center gap-2 bg-white text-sienna-500 px-8 py-4 rounded-full font-medium hover:bg-cream-100 transition-colors whitespace-nowrap"
             >
               <i className="ri-mail-line text-lg"></i>
               Contact Support
             </Link>
-            <a
-              href="https://wa.me/233554169992"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-blue-600 text-white px-8 py-4 rounded-full font-medium hover:bg-blue-500 transition-colors whitespace-nowrap"
+            <Link
+              href="/contact"
+              className="inline-flex items-center gap-2 bg-sienna-500 text-white px-8 py-4 rounded-full font-medium hover:bg-sienna-500 transition-colors whitespace-nowrap"
             >
               <i className="ri-whatsapp-line text-lg"></i>
-              Chat on WhatsApp
-            </a>
+              WhatsApp Us
+            </Link>
           </div>
         </div>
       </div>
@@ -249,8 +253,8 @@ export default function FAQsPage() {
 
         <div className="grid md:grid-cols-3 gap-6">
           <Link href="/shipping" className="bg-gray-50 p-8 rounded-2xl hover:shadow-lg transition-all cursor-pointer">
-            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-              <i className="ri-truck-line text-2xl text-blue-700"></i>
+            <div className="w-12 h-12 bg-sienna-50 rounded-full flex items-center justify-center mb-4">
+              <i className="ri-truck-line text-2xl text-sienna-500"></i>
             </div>
             <h3 className="text-xl font-bold text-gray-900 mb-2">Shipping Policy</h3>
             <p className="text-gray-600 leading-relaxed">
@@ -259,8 +263,8 @@ export default function FAQsPage() {
           </Link>
 
           <Link href="/returns" className="bg-gray-50 p-8 rounded-2xl hover:shadow-lg transition-all cursor-pointer">
-            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-              <i className="ri-arrow-go-back-line text-2xl text-blue-700"></i>
+            <div className="w-12 h-12 bg-sienna-50 rounded-full flex items-center justify-center mb-4">
+              <i className="ri-arrow-go-back-line text-2xl text-sienna-500"></i>
             </div>
             <h3 className="text-xl font-bold text-gray-900 mb-2">Returns Policy</h3>
             <p className="text-gray-600 leading-relaxed">
@@ -269,8 +273,8 @@ export default function FAQsPage() {
           </Link>
 
           <Link href="/privacy" className="bg-gray-50 p-8 rounded-2xl hover:shadow-lg transition-all cursor-pointer">
-            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-              <i className="ri-shield-check-line text-2xl text-blue-700"></i>
+            <div className="w-12 h-12 bg-sienna-50 rounded-full flex items-center justify-center mb-4">
+              <i className="ri-shield-check-line text-2xl text-sienna-500"></i>
             </div>
             <h3 className="text-xl font-bold text-gray-900 mb-2">Privacy & Security</h3>
             <p className="text-gray-600 leading-relaxed">

@@ -15,7 +15,7 @@ When prompted:
 1. **Set up and deploy?** → **Y** (Enter)
 2. **Which scope?** → Choose your account/team
 3. **Link to existing project?** → **N** (this creates a new project)
-4. **What’s your project’s name?** → e.g. `department-store` (or any name you want)
+4. **What's your project's name?** → e.g. `your-store` (or any name you want)
 
 The CLI will create the new project, deploy, and give you a preview URL.
 
@@ -44,4 +44,4 @@ Then trigger a new deploy (e.g. **Deployments** → **Redeploy** or push a new c
 
 ---
 
-**Note:** If you run `npx vercel --yes`, it will use defaults and may link to an existing project. To get a **new** project, run `npx vercel` without `--yes` and choose **N** for “Link to existing project?”.
+**Note:** If you run `npx vercel --yes`, it will use defaults and may link to an existing project. To get a **new** project, run `npx vercel` without `--yes` and choose **N** for "Link to existing project?".

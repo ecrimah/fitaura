@@ -1,85 +1,97 @@
 import { MetadataRoute } from 'next';
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://shopfitaura.com';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+
+type SitemapEntry = MetadataRoute.Sitemap[number];
+
+const STATIC_PAGES: SitemapEntry[] = [
+  { url: SITE_URL,                       lastModified: new Date(), changeFrequency: 'daily',   priority: 1.0 },
+  { url: `${SITE_URL}/shop`,             lastModified: new Date(), changeFrequency: 'daily',   priority: 0.95 },
+  { url: `${SITE_URL}/categories`,       lastModified: new Date(), changeFrequency: 'weekly',  priority: 0.85 },
+  { url: `${SITE_URL}/about`,            lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 },
+  { url: `${SITE_URL}/contact`,          lastModified: new Date(), changeFrequency: 'monthly', priority: 0.65 },
+  { url: `${SITE_URL}/blog`,             lastModified: new Date(), changeFrequency: 'weekly',  priority: 0.7 },
+  { url: `${SITE_URL}/faqs`,             lastModified: new Date(), changeFrequency: 'monthly', priority: 0.5 },
+  { url: `${SITE_URL}/shipping`,         lastModified: new Date(), changeFrequency: 'monthly', priority: 0.5 },
+  { url: `${SITE_URL}/returns`,          lastModified: new Date(), changeFrequency: 'monthly', priority: 0.45 },
+  { url: `${SITE_URL}/sustainability`,   lastModified: new Date(), changeFrequency: 'monthly', priority: 0.6 },
+  { url: `${SITE_URL}/size-guide`,       lastModified: new Date(), changeFrequency: 'monthly', priority: 0.55 },
+  { url: `${SITE_URL}/care-guide`,       lastModified: new Date(), changeFrequency: 'monthly', priority: 0.5 },
+  { url: `${SITE_URL}/privacy`,          lastModified: new Date(), changeFrequency: 'yearly',  priority: 0.3 },
+  { url: `${SITE_URL}/terms`,            lastModified: new Date(), changeFrequency: 'yearly',  priority: 0.3 },
+];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://tiwaperfumestyle.com';
+  const dynamic: SitemapEntry[] = [];
 
-  // Static pages
-  const staticPages: MetadataRoute.Sitemap = [
-    {
-      url: baseUrl,
-      lastModified: new Date(),
-      changeFrequency: 'daily',
-      priority: 1,
-    },
-    {
-      url: `${baseUrl}/shop`,
-      lastModified: new Date(),
-      changeFrequency: 'daily',
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/categories`,
-      lastModified: new Date(),
-      changeFrequency: 'weekly',
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/about`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.5,
-    },
-    {
-      url: `${baseUrl}/contact`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.5,
-    },
-  ];
+  if (supabaseUrl && supabaseKey && !supabaseUrl.includes('YOUR_PROJECT_REF')) {
+    try {
+      const supabase = createClient(supabaseUrl, supabaseKey);
 
-  // Dynamic product pages
-  let productPages: MetadataRoute.Sitemap = [];
-  let categoryPages: MetadataRoute.Sitemap = [];
+      // Products
+      const { data: products } = await supabase
+        .from('products')
+        .select('slug, updated_at')
+        .eq('status', 'active')
+        .order('updated_at', { ascending: false })
+        .limit(1000);
 
-  try {
-    const supabase = createClient(supabaseUrl, supabaseKey);
+      if (products) {
+        for (const p of products) {
+          dynamic.push({
+            url: `${SITE_URL}/product/${p.slug}`,
+            lastModified: p.updated_at ? new Date(p.updated_at) : new Date(),
+            changeFrequency: 'weekly',
+            priority: 0.8,
+          });
+        }
+      }
 
-    // Fetch active products
-    const { data: products } = await supabase
-      .from('products')
-      .select('slug, updated_at')
-      .eq('status', 'active');
+      // Categories  (route lives under /shop?category= for the storefront, but
+      //  we publish /category/<slug> in the sitemap because the legacy route
+      //  redirects to /shop?category=<slug>.)
+      const { data: categories } = await supabase
+        .from('categories')
+        .select('slug, updated_at')
+        .eq('status', 'active')
+        .order('position', { ascending: true });
 
-    if (products) {
-      productPages = products.map((product) => ({
-        url: `${baseUrl}/product/${product.slug}`,
-        lastModified: new Date(product.updated_at),
-        changeFrequency: 'weekly' as const,
-        priority: 0.7,
-      }));
+      if (categories) {
+        for (const c of categories) {
+          dynamic.push({
+            url: `${SITE_URL}/shop?category=${encodeURIComponent(c.slug)}`,
+            lastModified: c.updated_at ? new Date(c.updated_at) : new Date(),
+            changeFrequency: 'weekly',
+            priority: 0.75,
+          });
+        }
+      }
+
+      // Blog posts
+      const { data: posts } = await supabase
+        .from('blog_posts')
+        .select('slug, updated_at, published_at')
+        .eq('status', 'published')
+        .order('published_at', { ascending: false })
+        .limit(1000);
+
+      if (posts) {
+        for (const post of posts) {
+          dynamic.push({
+            url: `${SITE_URL}/blog/${post.slug}`,
+            lastModified: post.updated_at ? new Date(post.updated_at) : new Date(),
+            changeFrequency: 'monthly',
+            priority: 0.6,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('[sitemap] Error fetching dynamic entries:', error);
     }
-
-    // Fetch categories
-    const { data: categories } = await supabase
-      .from('categories')
-      .select('slug, updated_at')
-      .eq('status', 'active');
-
-    if (categories) {
-      categoryPages = categories.map((category) => ({
-        url: `${baseUrl}/category/${category.slug}`,
-        lastModified: new Date(category.updated_at),
-        changeFrequency: 'weekly' as const,
-        priority: 0.6,
-      }));
-    }
-  } catch (error) {
-    console.error('Error generating sitemap:', error);
   }
 
-  return [...staticPages, ...productPages, ...categoryPages];
+  return [...STATIC_PAGES, ...dynamic];
 }

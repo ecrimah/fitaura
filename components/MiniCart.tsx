@@ -33,18 +33,23 @@ export default function MiniCart({ isOpen, onClose }: MiniCartProps) {
         onClick={onClose}
       ></div>
 
-      <div className="fixed top-0 right-0 bottom-0 w-full max-w-md bg-white shadow-2xl z-50 flex flex-col slide-in-right">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-xl font-bold text-gray-900">
+      {/* `h-[100dvh]` uses dynamic viewport units so the drawer fills the
+          full screen even when the mobile browser UI is showing/hiding.
+          `flex flex-col` + min-h-0 on the scroller is what lets the product
+          list take ALL leftover space without being collapsed by the footer. */}
+      <div className="fixed top-0 right-0 bottom-0 w-full max-w-md bg-white shadow-2xl z-50 flex flex-col h-[100dvh] slide-in-right">
+        <header className="flex items-center justify-between px-5 py-4 border-b border-gray-200 flex-shrink-0">
+          <h2 className="text-lg font-bold text-gray-900">
             Shopping Cart ({cart.reduce((sum, i) => sum + i.quantity, 0)})
           </h2>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
+            aria-label="Close cart"
+            className="w-9 h-9 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
           >
             <i className="ri-close-line text-2xl text-gray-700"></i>
           </button>
-        </div>
+        </header>
 
         {cart.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
@@ -56,18 +61,25 @@ export default function MiniCart({ isOpen, onClose }: MiniCartProps) {
             <Link
               href="/shop"
               onClick={onClose}
-              className="px-6 py-3 bg-blue-700 text-white rounded-lg font-semibold hover:bg-blue-800 transition-colors whitespace-nowrap cursor-pointer"
+              className="px-6 py-3 bg-sienna-500 text-white rounded-lg font-semibold hover:bg-sienna-600 transition-colors whitespace-nowrap cursor-pointer"
             >
               Continue Shopping
             </Link>
           </div>
         ) : (
           <>
-            <div className="flex-1 overflow-y-auto p-6">
-              <div className="space-y-4">
+            {/* `min-h-0` is critical — without it, flex children refuse to
+                shrink below their content height and the scroll container
+                collapses behind the footer instead of scrolling. */}
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 py-5">
+              <ul className="space-y-3.5">
                 {cart.map((item) => (
-                  <div key={`${item.id}-${item.variant}`} className="flex space-x-4 bg-gray-50 rounded-lg p-4">
-                    <div className="w-20 h-20 bg-white rounded-lg overflow-hidden flex-shrink-0 border border-gray-200">
+                  <li
+                    key={`${item.id}-${item.variant}`}
+                    className="flex gap-3.5 bg-gray-50 rounded-xl p-3.5"
+                  >
+                    <div className="w-[88px] h-[110px] bg-white rounded-lg overflow-hidden flex-shrink-0 border border-gray-200">
+                      {/* eslint-disable-next-line @next/next/no-img-element -- runtime cart thumb */}
                       <img
                         src={item.image}
                         alt={item.name}
@@ -75,83 +87,94 @@ export default function MiniCart({ isOpen, onClose }: MiniCartProps) {
                       />
                     </div>
 
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-gray-900 mb-1 line-clamp-1">{item.name}</h3>
+                    <div className="flex-1 min-w-0 flex flex-col">
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="font-semibold text-gray-900 leading-snug line-clamp-2 text-[15px]">
+                          {item.name}
+                        </h3>
+                        <button
+                          onClick={() => removeFromCart(item.id, item.variant)}
+                          aria-label={`Remove ${item.name} from cart`}
+                          className="w-7 h-7 -mr-1 -mt-1 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors flex-shrink-0 cursor-pointer"
+                        >
+                          <i className="ri-close-line text-lg"></i>
+                        </button>
+                      </div>
+
                       {item.variant && (
-                        <p className="text-xs text-gray-600 mb-2">
-                          Variant: {item.variant}
+                        <p className="text-xs text-gray-500 mt-0.5 mb-auto pb-2">
+                          {item.variant}
                         </p>
                       )}
 
-                      <div className="flex items-center justify-between mt-2">
-                        <span className="text-lg font-bold text-blue-700">
-                          GH₵{item.price.toFixed(2)}
-                        </span>
-
-                        <div className="flex items-center border border-gray-300 rounded bg-white">
+                      <div className="flex items-center justify-between mt-auto pt-1">
+                        <div className="flex items-center border border-gray-300 rounded-full bg-white h-8">
                           <button
                             onClick={() => updateQuantity(item.id, item.quantity - 1, item.variant)}
-                            className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 transition-colors cursor-pointer"
+                            className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-l-full transition-colors cursor-pointer"
+                            aria-label={item.quantity <= (item.moq || 1) ? 'Remove item' : 'Decrease quantity'}
                           >
                             {item.quantity <= (item.moq || 1) ? (
-                              <i className="ri-delete-bin-line text-red-500"></i>
+                              <i className="ri-delete-bin-line text-red-500 text-sm"></i>
                             ) : (
-                              <i className="ri-subtract-line text-gray-700"></i>
+                              <i className="ri-subtract-line text-gray-700 text-sm"></i>
                             )}
                           </button>
-                          <span className="w-10 text-center font-semibold text-gray-900">{item.quantity}</span>
+                          <span className="w-7 text-center font-semibold text-gray-900 text-sm">{item.quantity}</span>
                           <button
                             onClick={() => updateQuantity(item.id, item.quantity + 1, item.variant)}
-                            className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 transition-colors cursor-pointer"
+                            className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-r-full transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                             disabled={item.quantity >= item.maxStock}
+                            aria-label="Increase quantity"
                           >
-                            <i className="ri-add-line text-gray-700"></i>
+                            <i className="ri-add-line text-gray-700 text-sm"></i>
                           </button>
                         </div>
+
+                        <span className="text-base font-bold text-sienna-500">
+                          ${(item.price * item.quantity).toFixed(2)}
+                        </span>
                       </div>
                       {item.quantity >= item.maxStock && (
-                        <p className="text-xs text-amber-600 mt-1">Max stock reached</p>
+                        <p className="text-[11px] text-amber-600 mt-1">Max stock reached</p>
                       )}
                     </div>
-
-                    <button
-                      onClick={() => removeFromCart(item.id, item.variant)}
-                      className="w-8 h-8 flex items-center justify-center hover:bg-red-50 rounded-full transition-colors flex-shrink-0 cursor-pointer"
-                    >
-                      <i className="ri-delete-bin-line text-red-600"></i>
-                    </button>
-                  </div>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </div>
 
-            <div className="border-t border-gray-200 p-6 bg-gray-50">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-gray-700 font-medium">Subtotal</span>
-                <span className="text-2xl font-bold text-gray-900">GH₵{subtotal.toFixed(2)}</span>
+            {/* `pb-[calc(env(safe-area-inset-bottom)+1.25rem)]` reserves space for
+                the iOS home indicator / Android gesture bar / mobile browser
+                chrome so the "View full cart" link is never clipped. */}
+            <footer
+              className="flex-shrink-0 border-t border-gray-200 px-5 pt-4 bg-white"
+              style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.25rem)' }}
+            >
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-gray-700 font-medium text-sm">Subtotal</span>
+                <span className="text-xl font-bold text-gray-900">${subtotal.toFixed(2)}</span>
               </div>
 
-              <p className="text-sm text-gray-600 mb-4 text-center">
-                Shipping calculated at checkout
+              <p className="text-xs text-gray-500 mb-3">
+                Shipping & taxes calculated at checkout
               </p>
 
-              <div className="space-y-3">
-                <Link
-                  href="/checkout"
-                  onClick={onClose}
-                  className="block w-full py-4 bg-blue-700 text-white text-center rounded-lg font-semibold hover:bg-blue-800 transition-colors whitespace-nowrap cursor-pointer"
-                >
-                  Proceed to Checkout
-                </Link>
-                <Link
-                  href="/cart"
-                  onClick={onClose}
-                  className="block w-full py-4 border-2 border-gray-900 text-gray-900 text-center rounded-lg font-semibold hover:bg-gray-50 transition-colors whitespace-nowrap cursor-pointer"
-                >
-                  View Cart
-                </Link>
-              </div>
-            </div>
+              <Link
+                href="/checkout"
+                onClick={onClose}
+                className="block w-full py-3.5 bg-sienna-500 text-white text-center rounded-lg font-semibold hover:bg-sienna-600 transition-colors whitespace-nowrap cursor-pointer"
+              >
+                Proceed to Checkout
+              </Link>
+              <Link
+                href="/cart"
+                onClick={onClose}
+                className="block w-full mt-2 py-2 text-gray-700 text-center text-sm font-medium hover:text-gray-900 underline underline-offset-4 decoration-gray-300 hover:decoration-gray-700 transition-colors whitespace-nowrap cursor-pointer"
+              >
+                View full cart
+              </Link>
+            </footer>
           </>
         )}
       </div>

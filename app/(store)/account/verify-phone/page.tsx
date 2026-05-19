@@ -72,7 +72,7 @@ export default function VerifyPhonePage() {
       <div className="max-w-md w-full">
         <div className="bg-white rounded-2xl shadow-lg p-8">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 bg-sienna-500 rounded-full flex items-center justify-center mx-auto mb-4">
               <i className="ri-phone-line text-3xl text-white"></i>
             </div>
             <h1 className="text-2xl font-bold mb-2">Verify Phone Number</h1>
@@ -107,7 +107,7 @@ export default function VerifyPhonePage() {
             <button
               onClick={handleVerify}
               disabled={code.join('').length !== 6 || isVerifying}
-              className="w-full py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed font-medium whitespace-nowrap"
+              className="w-full py-3 bg-sienna-500 text-white rounded-lg hover:bg-sienna-600 transition-colors disabled:bg-ink-200 disabled:cursor-not-allowed font-medium whitespace-nowrap"
             >
               {isVerifying ? (
                 <>
@@ -155,8 +155,8 @@ export default function VerifyPhonePage() {
           </div>
 
           <div className="mt-6">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <p className="text-xs text-blue-900">
+            <div className="bg-cream-100 border border-sienna-100 rounded-lg p-3">
+              <p className="text-xs text-ink-900">
                 <i className="ri-information-line mr-1"></i>
                 Standard SMS rates may apply. Code expires in 10 minutes.
               </p>

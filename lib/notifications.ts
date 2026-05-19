@@ -3,15 +3,15 @@ import { supabase } from '@/lib/supabase';
 import { escapeHtml } from '@/lib/sanitize';
 
 const resend = new Resend(process.env.RESEND_API_KEY || 'missing_api_key');
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'tiwaperfumestyle@gmail.com';
-const EMAIL_FROM = process.env.EMAIL_FROM || 'TIWAA PERFUME STYLE HOUSE <tiwaperfumestyle@gmail.com>';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@shopfitaura.com';
+const EMAIL_FROM = process.env.EMAIL_FROM || 'FITAURA <noreply@shopfitaura.com>';
 const BRAND = {
-    name: 'TIWAA PERFUME STYLE HOUSE',
-    color: '#2563eb',
-    colorLight: '#eff6ff',
-    colorDark: '#064e3b',
+    name: 'FITAURA',
+    color: '#D14F2B',
+    colorLight: '#FBF7F1',
+    colorDark: '#26261F',
     url: (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/+$/, ''),
-    phone: '+233545010949',
+    phone: '+1 (587) 432-6761',
 };
 
 // Reusable branded email layout
@@ -30,7 +30,6 @@ ${preheader ? `<span style="display:none;max-height:0;overflow:hidden;">${prehea
 <!-- Header -->
 <tr><td style="background:linear-gradient(135deg,${BRAND.color},${BRAND.colorDark});padding:32px 40px;text-align:center;">
 <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;letter-spacing:0.5px;">${BRAND.name}</h1>
-<p style="margin:6px 0 0;color:rgba(255,255,255,0.8);font-size:12px;letter-spacing:1.5px;text-transform:uppercase;">Perfumes · Wholesale & Retail</p>
 </td></tr>
 
 <!-- Body -->
@@ -106,28 +105,20 @@ export async function sendEmail({ to, subject, html }: { to: string; subject: st
     }
 }
 
-// Helper to format phone number for SMS (Ghana specific for now)
-// Helper to format phone number for SMS (Ghana specific for now)
+// Format a phone number into E.164 for SMS delivery.
+// Defaults to Canada / North-America (+1) when the country code is missing,
+// since FITAURA is based in Calgary. Customers entering international numbers
+// should include the leading + and country code.
 function formatPhoneNumber(phone: string): string {
-    // Remove all non-digit characters (including + for now)
     let cleaned = phone.replace(/\D/g, '');
 
-    // If starts with 0 (e.g. 024...), replace 0 with 233
-    if (cleaned.startsWith('0')) {
-        cleaned = '233' + cleaned.substring(1);
+    // Bare 10-digit North-American number → prepend country code 1.
+    if (cleaned.length === 10) {
+        cleaned = '1' + cleaned;
     }
 
-    // If length is 9 (e.g. 24...), prepend 233
-    if (cleaned.length === 9) {
-        cleaned = '233' + cleaned;
-    }
-
-    // Ensure it starts with correct country code before prepending +
-    if (!cleaned.startsWith('233') && cleaned.length === 12) {
-        // Assuming it's some other format, but if it starts with 233, it's fine.
-    }
-
-    // Return with + prefix as per E.164
+    // Reject anything obviously too short, but still return a value so the
+    // downstream SMS provider can surface the error.
     return '+' + cleaned;
 }
 
@@ -154,7 +145,7 @@ export async function sendSMS({ to, message }: { to: string; message: string }) 
             },
             body: JSON.stringify({
                 type: 1,
-                senderid: 'TIWAA',
+                senderid: 'STORE',
                 messages: [
                     {
                         recipient: recipient,
@@ -251,7 +242,7 @@ export async function sendOrderConfirmation(order: any) {
   ${emailInfoRow('Order Number', `#${order_number || id}`)}
   ${emailInfoRow('Order Date', new Date(created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }))}
   ${trackingNumber ? emailInfoRow('Tracking', trackingNumber) : ''}
-  ${emailInfoRow('Total', `GH₵${Number(total).toFixed(2)}`)}
+  ${emailInfoRow('Total', `$${Number(total).toFixed(2)}`)}
 </table>
 
 ${emailShippingNotes(shippingNotes)}
@@ -277,7 +268,7 @@ ${emailButton('Track Your Order', trackingUrl)}
   ${emailInfoRow('Order', `#${order_number || id}`)}
   ${emailInfoRow('Customer', `${name}`)}
   ${emailInfoRow('Email', email)}
-  ${emailInfoRow('Total', `GH₵${Number(total).toFixed(2)}`)}
+  ${emailInfoRow('Total', `$${Number(total).toFixed(2)}`)}
   ${trackingNumber ? emailInfoRow('Tracking', trackingNumber) : ''}
 </table>
 
@@ -296,7 +287,7 @@ ${emailButton('View Order in Admin', `${baseUrl}/admin/orders/${id}`)}
     if (phone) {
         const smsMessage = trackingNumber
             ? `Hi ${name}, your order #${order_number || id} is confirmed! Tracking: ${trackingNumber}. Track here: ${trackingUrl}${shippingNotesSms}`
-            : `Hi ${name}, your order #${order_number || id} at TIWAA PERFUME STYLE HOUSE is confirmed! Track here: ${trackingUrl}${shippingNotesSms}`;
+            : `Hi ${name}, your order #${order_number || id} is confirmed! Track here: ${trackingUrl}${shippingNotesSms}`;
 
         await sendSMS({
             to: phone,
@@ -354,8 +345,8 @@ export async function sendOrderStatusUpdate(order: any, newStatus: string) {
 
     // Status icons/colors
     const statusConfig: Record<string, { icon: string; color: string; bg: string }> = {
-        processing: { icon: '&#9881;', color: '#2563eb', bg: '#eff6ff' },
-        shipped: { icon: '&#128666;', color: '#2563eb', bg: '#eff6ff' },
+        processing: { icon: '&#9881;', color: '#D14F2B', bg: '#FBF1EC' },
+        shipped: { icon: '&#128666;', color: '#D14F2B', bg: '#FBF1EC' },
         delivered: { icon: '&#127881;', color: '#16a34a', bg: '#f0fdf4' },
         cancelled: { icon: '&#10060;', color: '#dc2626', bg: '#fef2f2' },
     };
@@ -406,7 +397,7 @@ export async function sendWelcomeMessage(user: { email: string, firstName: strin
   <p style="margin:0;color:#6b7280;font-size:15px;">We're so glad you're here.</p>
 </div>
 
-<p style="color:#374151;font-size:14px;line-height:1.7;margin:16px 0;">Thank you for joining the ${BRAND.name} family. We offer premium quality perfumes at competitive prices &mdash; for resellers and individual customers.</p>
+<p style="color:#374151;font-size:14px;line-height:1.7;margin:16px 0;">Thank you for joining ${BRAND.name}. We offer quality products at competitive prices.</p>
 
 <div style="background-color:#f9fafb;border-radius:12px;padding:20px;margin:20px 0;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
@@ -438,7 +429,7 @@ ${emailButton('Start Shopping', `${BRAND.url}/shop`)}
     if (phone) {
         await sendSMS({
             to: phone,
-            message: `Welcome ${firstName}! Thanks for joining TIWAA PERFUME STYLE HOUSE.`
+            message: `Welcome ${firstName}! Thanks for joining ${BRAND.name}.`
         });
     }
 }
@@ -482,12 +473,12 @@ export async function sendPaymentLink(order: any) {
 
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f9fafb;border-radius:12px;overflow:hidden;margin:20px 0;">
   ${emailInfoRow('Order Number', `#${order_number}`)}
-  ${emailInfoRow('Amount Due', `<span style="color:${BRAND.color};font-size:18px;font-weight:700;">GH₵${Number(total).toFixed(2)}</span>`)}
+  ${emailInfoRow('Amount Due', `<span style="color:${BRAND.color};font-size:18px;font-weight:700;">$${Number(total).toFixed(2)}</span>`)}
 </table>
 
 <p style="color:#374151;font-size:14px;line-height:1.6;margin:16px 0;">Click the button below to securely complete your payment. This link will remain active until your order is completed or cancelled.</p>
 
-${emailButton('Pay Now — GH₵' + Number(total).toFixed(2), paymentUrl, '#d97706')}
+${emailButton('Pay Now — $' + Number(total).toFixed(2), paymentUrl, '#d97706')}
 
 <p style="color:#9ca3af;font-size:12px;text-align:center;margin:0;">Or copy this link: <a href="${paymentUrl}" style="color:${BRAND.color};">${paymentUrl}</a></p>
 `, `Complete payment for order #${order_number}`)
@@ -495,7 +486,7 @@ ${emailButton('Pay Now — GH₵' + Number(total).toFixed(2), paymentUrl, '#d977
 
     // SMS with payment link
     if (phone) {
-        const smsMessage = `Hi ${name}, complete your order #${order_number} (GH₵${Number(total).toFixed(2)}) here: ${paymentUrl}`;
+        const smsMessage = `Hi ${name}, complete your order #${order_number} ($${Number(total).toFixed(2)}) here: ${paymentUrl}`;
 
         await sendSMS({
             to: phone,

@@ -39,7 +39,7 @@ export default function NewsletterSection() {
 
           {/* Left Content */}
           <div className="text-center lg:text-left max-w-xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-900/50 border border-blue-500/30 text-blue-300 text-xs font-bold tracking-widest uppercase mb-4 animate-pulse-glow">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-ink-900/50 border border-sienna-500/30 text-sienna-300 text-xs font-bold tracking-widest uppercase mb-4 animate-pulse-glow">
               <span className="w-2 h-2 rounded-full bg-sky-400"></span>
               The Insider Club
             </div>
@@ -48,8 +48,8 @@ export default function NewsletterSection() {
               Unlock <span className="italic text-sky-400">10% Off</span> <br /> Your First Order
             </h3>
 
-            <p className="text-blue-100/80 text-base leading-relaxed">
-              Be the first to know about new arrivals, restocks, and exclusive perfume deals. We keep you updated on the latest fragrances.
+            <p className="text-sienna-50/80 text-base leading-relaxed">
+              Be the first to know about new arrivals, restocks, and exclusive drops. We keep you updated on every release.
             </p>
           </div>
 
@@ -67,7 +67,7 @@ export default function NewsletterSection() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-sky-400 hover:bg-blue-400 text-blue-950 font-bold px-6 py-3 rounded-xl transition-all hover:scale-105 active:scale-95 disabled:opacity-75 disabled:cursor-not-allowed shadow-lg whitespace-nowrap text-sm"
+                className="bg-sky-400 hover:bg-sienna-400 text-ink-900 font-bold px-6 py-3 rounded-xl transition-all hover:scale-105 active:scale-95 disabled:opacity-75 disabled:cursor-not-allowed shadow-lg whitespace-nowrap text-sm"
               >
                 {isSubmitting ? (
                   <i className="ri-loader-4-line animate-spin text-lg"></i>
@@ -83,7 +83,7 @@ export default function NewsletterSection() {
         </div>
 
         {submitStatus === 'success' && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-sky-400 text-blue-950 px-6 py-2 rounded-full font-bold shadow-lg animate-in fade-in slide-in-from-bottom-2">
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-sky-400 text-ink-900 px-6 py-2 rounded-full font-bold shadow-lg animate-in fade-in slide-in-from-bottom-2">
             <i className="ri-checkbox-circle-line mr-2"></i> Welcome to the club!
           </div>
         )}

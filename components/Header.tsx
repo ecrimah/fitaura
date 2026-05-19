@@ -8,46 +8,70 @@ import { supabase } from '@/lib/supabase';
 import { useCMS } from '@/context/CMSContext';
 import AnnouncementBar from './AnnouncementBar';
 
+const NAV_LINKS = [
+  { label: 'Home', href: '/' },
+  { label: 'Shop', href: '/shop' },
+  { label: 'Collection', href: '/categories' },
+  { label: 'About', href: '/about' },
+  { label: 'Journal', href: '/blog' },
+  { label: 'Contact', href: '/contact' },
+];
+
 export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [wishlistCount, setWishlistCount] = useState(0);
   const [user, setUser] = useState<any>(null);
+  const [hasScrolled, setHasScrolled] = useState(false);
 
   const { cartCount, isCartOpen, setIsCartOpen } = useCart();
   const { getSetting } = useCMS();
 
-  const siteName = getSetting('site_name') || 'TIWAA PERFUME STYLE HOUSE';
-  const headerLogo = getSetting('site_logo') || '/tiwa logo.png';
+  const siteName = getSetting('site_name') || 'FITAURA';
 
   useEffect(() => {
-    // Wishlist logic
     const updateWishlistCount = () => {
       const wishlist = JSON.parse(localStorage.getItem('wishlist') || '[]');
       setWishlistCount(wishlist.length);
     };
-
     updateWishlistCount();
     window.addEventListener('wishlistUpdated', updateWishlistCount);
 
-    // Auth logic
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user ?? null);
     };
-
     checkUser();
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
     });
 
+    const onScroll = () => setHasScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+
     return () => {
       window.removeEventListener('wishlistUpdated', updateWishlistCount);
+      window.removeEventListener('scroll', onScroll);
       subscription.unsubscribe();
     };
   }, []);
+
+  // Close the search overlay on Escape and lock body scroll while it's open.
+  useEffect(() => {
+    if (!isSearchOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsSearchOpen(false);
+    };
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [isSearchOpen]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,16 +84,24 @@ export default function Header() {
     <>
       <AnnouncementBar />
 
-      <header className="bg-white sticky top-0 z-50 border-b border-gray-100 transition-all duration-300">
+      <header
+        className={`bg-cream-50/95 backdrop-blur-md sticky top-0 z-50 transition-all duration-300 ${
+          hasScrolled ? 'border-b border-ink-100 shadow-soft' : 'border-b border-transparent'
+        }`}
+      >
         <div className="safe-area-top" />
         <nav aria-label="Main navigation" className="relative">
-          <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="h-20 grid grid-cols-[auto_1fr_auto] items-center gap-4">
+          <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10">
+            <div className="h-[68px] lg:h-[76px] grid grid-cols-[auto_1fr_auto] items-center gap-4">
 
-              {/* Left: Mobile Menu Trigger (Mobile) & Logo */}
-              <div className="flex items-center gap-4">
+              {/* Left: Mobile Menu Trigger + Logo
+                  The logo is only shown from `lg:` upward — on mobile and
+                  tablet the FITAURA mark already lives at the top of the
+                  hamburger drawer, so we omit it here to keep the bar
+                  uncluttered around the menu trigger. */}
+              <div className="flex items-center gap-3">
                 <button
-                  className="lg:hidden p-2 -ml-2 text-gray-900 hover:text-gray-600 transition-colors"
+                  className="lg:hidden p-2 -ml-2 text-ink-900 hover:text-sienna-500 transition-colors"
                   onClick={() => setIsMobileMenuOpen(true)}
                   aria-label="Open menu"
                 >
@@ -77,82 +109,83 @@ export default function Header() {
                 </button>
                 <Link
                   href="/"
-                  className="flex items-center select-none"
-                  aria-label="Go to homepage"
+                  className="hidden lg:flex items-center select-none group"
+                  aria-label={`${siteName} home`}
                 >
-                  <img src={headerLogo} alt={siteName} className="h-9 md:h-11 w-auto object-contain" />
+                  {/* eslint-disable-next-line @next/next/no-img-element -- intentional <img> for crisp scaling of brand mark with transparency */}
+                  <img
+                    src="/fitaura-logo.png"
+                    alt={siteName}
+                    className="h-10 md:h-12 w-auto object-contain select-none"
+                    draggable={false}
+                  />
                 </Link>
               </div>
 
-              {/* Center: Navigation Links (Desktop) */}
-              <div className="hidden lg:flex items-center justify-center space-x-12">
-                {[
-                  { label: 'Shop', href: '/shop' },
-                  { label: 'Categories', href: '/categories' },
-                  { label: 'About', href: '/about' },
-                  { label: 'Contact', href: '/contact' },
-                ].map((link) => (
+              {/* Center: Navigation (Desktop) */}
+              <div className="hidden lg:flex items-center justify-center gap-10">
+                {NAV_LINKS.map((link) => (
                   <Link
                     key={link.href}
                     href={link.href}
-                    className="group relative py-2 text-sm uppercase tracking-widest font-medium text-gray-900 transition-colors hover:text-gray-600"
+                    className="group relative py-2 text-[12px] uppercase tracking-[0.22em] font-medium text-ink-700 hover:text-sienna-500 transition-colors"
                   >
                     {link.label}
-                    <span className="absolute inset-x-0 bottom-0 h-px scale-x-0 bg-gray-900 transition-transform duration-300 ease-out group-hover:scale-x-100" />
+                    <span className="absolute inset-x-0 -bottom-0.5 h-px scale-x-0 origin-left bg-sienna-500 transition-transform duration-300 ease-out group-hover:scale-x-100" />
                   </Link>
                 ))}
               </div>
 
-              {/* Right: Icons */}
-              <div className="flex items-center justify-end space-x-2 sm:space-x-4">
+              {/* Right: Utility icons */}
+              <div className="flex items-center justify-end gap-1 sm:gap-2">
                 <button
-                  className="p-2 text-gray-900 hover:text-gray-600 transition-transform hover:scale-105"
+                  className="p-2 text-ink-900 hover:text-sienna-500 transition-colors"
                   onClick={() => setIsSearchOpen(true)}
                   aria-label="Search"
                 >
-                  <i className="ri-search-line text-xl"></i>
+                  <i className="ri-search-line text-[20px]"></i>
                 </button>
+
+                {user ? (
+                  <Link
+                    href="/account"
+                    className="p-2 text-ink-900 hover:text-sienna-500 transition-colors hidden sm:block"
+                    aria-label="Account"
+                  >
+                    <i className="ri-user-line text-[20px]"></i>
+                  </Link>
+                ) : (
+                  <Link
+                    href="/auth/login"
+                    className="p-2 text-ink-900 hover:text-sienna-500 transition-colors hidden sm:block"
+                    aria-label="Login"
+                  >
+                    <i className="ri-user-line text-[20px]"></i>
+                  </Link>
+                )}
 
                 <Link
                   href="/wishlist"
-                  className="p-2 text-gray-900 hover:text-gray-600 transition-transform hover:scale-105 relative hidden sm:block"
+                  className="p-2 text-ink-900 hover:text-sienna-500 transition-colors relative hidden sm:block"
                   aria-label="Wishlist"
                 >
-                  <i className="ri-heart-line text-xl"></i>
+                  <i className="ri-heart-line text-[20px]"></i>
                   {wishlistCount > 0 && (
-                    <span className="absolute top-1 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-black text-[10px] font-bold text-white">
+                    <span className="absolute top-1 right-0 flex h-[18px] min-w-[18px] px-[5px] items-center justify-center rounded-full bg-sienna-500 text-[10px] font-semibold text-cream-50">
                       {wishlistCount}
                     </span>
                   )}
                 </Link>
 
-                {user ? (
-                  <Link
-                    href="/account"
-                    className="p-2 text-gray-900 hover:text-gray-600 transition-transform hover:scale-105 hidden sm:block"
-                    aria-label="Account"
-                  >
-                    <i className="ri-user-line text-xl"></i>
-                  </Link>
-                ) : (
-                  <Link
-                    href="/auth/login"
-                    className="p-2 text-gray-900 hover:text-gray-600 transition-transform hover:scale-105 hidden sm:block"
-                    aria-label="Login"
-                  >
-                    <i className="ri-user-line text-xl"></i>
-                  </Link>
-                )}
-
                 <div className="relative">
                   <button
-                    className="p-2 text-gray-900 hover:text-gray-600 transition-transform hover:scale-105"
+                    className="p-2 text-ink-900 hover:text-sienna-500 transition-colors"
                     onClick={() => setIsCartOpen(!isCartOpen)}
-                    aria-label="Cart"
+                    aria-label="Bag"
                   >
-                    <i className="ri-shopping-bag-line text-xl"></i>
+                    <i className="ri-shopping-bag-line text-[20px]"></i>
                     {cartCount > 0 && (
-                      <span className="absolute top-1 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-black text-[10px] font-bold text-white">
+                      <span className="absolute top-1 right-0 flex h-[18px] min-w-[18px] px-[5px] items-center justify-center rounded-full bg-sienna-500 text-[10px] font-semibold text-cream-50">
                         {cartCount}
                       </span>
                     )}
@@ -166,101 +199,134 @@ export default function Header() {
         </nav>
       </header>
 
+      {/* Search overlay — Spotlight-style pill
+          A single floating pill with a search icon, an input, and a
+          close button. Press Enter to search; Esc or backdrop click to
+          dismiss. The cream surface + sienna focus ring keep it on
+          the FITAURA brand voice. */}
       {isSearchOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-24">
-          <div className="bg-white rounded-lg w-full max-w-2xl mx-4 shadow-2xl">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-semibold text-gray-900">Search Products</h3>
+        <div
+          className="fixed inset-0 bg-ink-900/50 backdrop-blur-md z-[60] flex items-start justify-center pt-20 sm:pt-28 px-4 animate-in fade-in duration-200"
+          onClick={() => setIsSearchOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Search FITAURA"
+        >
+          <form
+            onSubmit={handleSearch}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-2xl animate-in slide-in-from-top-4 fade-in duration-300"
+          >
+            <div className="flex items-center bg-cream-50 rounded-full shadow-[0_18px_60px_-15px_rgba(11,15,23,0.45)] ring-1 ring-cream-200 focus-within:ring-2 focus-within:ring-sienna-500/60 transition-shadow pl-5 sm:pl-6 pr-2">
+              <i
+                className="ri-search-line text-lg sm:text-xl text-ink-400 flex-shrink-0"
+                aria-hidden
+              ></i>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search products, collections, categories…"
+                className="flex-1 bg-transparent border-0 outline-none ring-0 shadow-none appearance-none focus:border-0 focus:outline-none focus:ring-0 focus:shadow-none px-3 sm:px-4 py-3.5 sm:py-4 text-base sm:text-lg placeholder:text-ink-400 text-ink-900 min-w-0"
+                style={{ boxShadow: 'none' }}
+                autoFocus
+              />
+              {searchQuery && (
                 <button
-                  onClick={() => setIsSearchOpen(false)}
-                  className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-gray-700"
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="w-8 h-8 flex items-center justify-center text-ink-300 hover:text-ink-700 transition-colors flex-shrink-0"
+                  aria-label="Clear search"
                 >
-                  <i className="ri-close-line text-2xl"></i>
+                  <i className="ri-close-circle-fill text-base"></i>
                 </button>
-              </div>
-              <form onSubmit={handleSearch}>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search for products..."
-                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
-                    autoFocus
-                  />
-                  <button
-                    type="submit"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-blue-700 hover:text-blue-900"
-                  >
-                    <i className="ri-search-line text-xl"></i>
-                  </button>
-                </div>
-              </form>
+              )}
+              <span className="hidden sm:block w-px h-5 bg-cream-200 mx-1.5 flex-shrink-0" />
+              <button
+                type="button"
+                onClick={() => setIsSearchOpen(false)}
+                className="w-9 h-9 flex items-center justify-center text-ink-500 hover:text-ink-900 hover:bg-cream-100 rounded-full transition-colors flex-shrink-0"
+                aria-label="Close search"
+              >
+                <i className="ri-close-line text-lg"></i>
+              </button>
             </div>
-          </div>
+
+            <p className="mt-4 text-center text-[10px] sm:text-[11px] tracking-[0.22em] uppercase font-semibold text-cream-100/80">
+              Press{' '}
+              <kbd className="bg-cream-50/15 text-cream-50 border border-cream-50/20 rounded px-1.5 py-0.5 text-[10px] font-semibold tracking-normal mx-0.5">
+                Enter
+              </kbd>{' '}
+              to search ·{' '}
+              <kbd className="bg-cream-50/15 text-cream-50 border border-cream-50/20 rounded px-1.5 py-0.5 text-[10px] font-semibold tracking-normal mx-0.5">
+                Esc
+              </kbd>{' '}
+              to close
+            </p>
+          </form>
         </div>
-      )
-      }
+      )}
 
       {/* Mobile Menu Drawer */}
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-[100] lg:hidden">
           <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            className="absolute inset-0 bg-ink-900/60 backdrop-blur-sm"
             onClick={() => setIsMobileMenuOpen(false)}
             aria-hidden="true"
           />
-          <div className="absolute top-0 left-0 bottom-0 w-4/5 max-w-xs bg-white shadow-xl flex flex-col animate-in slide-in-from-left duration-300">
-            <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+          <div className="absolute top-0 left-0 bottom-0 w-[85%] max-w-sm bg-cream-50 shadow-soft-lg flex flex-col animate-in slide-in-from-left duration-300">
+            <div className="p-5 border-b border-ink-100 flex items-center justify-between">
               <Link href="/" onClick={() => setIsMobileMenuOpen(false)}>
-                <img src={headerLogo} alt={siteName} className="h-8 w-auto object-contain" />
+                {/* eslint-disable-next-line @next/next/no-img-element -- intentional <img> for crisp scaling of brand mark with transparency */}
+                <img
+                  src="/fitaura-logo.png"
+                  alt={siteName}
+                  className="h-9 w-auto object-contain select-none"
+                  draggable={false}
+                />
               </Link>
               <button
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="p-2 -mr-2 text-gray-500 hover:text-gray-900"
+                className="p-2 -mr-2 text-ink-500 hover:text-ink-900"
                 aria-label="Close menu"
               >
                 <i className="ri-close-line text-2xl"></i>
               </button>
             </div>
 
-            <nav className="flex-1 overflow-y-auto p-4 space-y-2">
-              {[
-                { label: 'Home', href: '/' },
-                { label: 'Shop', href: '/shop' },
-                { label: 'Categories', href: '/categories' },
-                { label: 'About', href: '/about' },
-                { label: 'Contact', href: '/contact' },
-              ].map((link) => (
+            <nav className="flex-1 overflow-y-auto p-5 space-y-1">
+              {NAV_LINKS.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="block px-4 py-3 text-lg font-medium text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-lg transition-colors"
+                  className="flex items-center justify-between px-2 py-4 text-base font-medium text-ink-900 hover:text-sienna-500 transition-colors border-b border-ink-100"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  {link.label}
+                  <span>{link.label}</span>
+                  <i className="ri-arrow-right-s-line text-xl text-ink-300"></i>
                 </Link>
               ))}
-              <div className="h-px bg-gray-100 my-2"></div>
+              <div className="h-px bg-transparent my-4"></div>
               {[
-                { label: 'Track Order', href: '/order-tracking' },
-                { label: 'Wishlist', href: '/wishlist' },
-                { label: 'My Account', href: '/account' },
+                { label: 'Wishlist', href: '/wishlist', icon: 'ri-heart-line' },
+                { label: 'Track Order', href: '/order-tracking', icon: 'ri-truck-line' },
+                { label: 'My Account', href: '/account', icon: 'ri-user-line' },
               ].map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="block px-4 py-3 text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg transition-colors"
+                  className="flex items-center gap-3 px-2 py-3 text-sm font-medium text-ink-500 hover:text-ink-900 transition-colors"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  {link.label}
+                  <i className={`${link.icon} text-lg`}></i>
+                  <span>{link.label}</span>
                 </Link>
               ))}
             </nav>
 
-            <div className="p-4 border-t border-gray-100">
-              <p className="text-xs text-gray-500 text-center">
+            <div className="p-5 border-t border-ink-100">
+              <p className="text-[11px] tracking-[0.2em] uppercase text-ink-400 text-center">
                 &copy; {new Date().getFullYear()} {siteName}
               </p>
             </div>

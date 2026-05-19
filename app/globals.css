@@ -4,6 +4,55 @@
 @tailwind utilities;
 
 /* ========================================
+   FITAURA · BASE LAYER
+   ======================================== */
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    background-color: #FBF7F1;
+    color: #26261F;
+    font-feature-settings: 'ss01', 'cv11';
+  }
+
+  /* Display headlines: tight tracking, optical balance */
+  .font-display {
+    letter-spacing: -0.005em;
+    line-height: 0.92;
+  }
+
+  ::selection {
+    background-color: #D14F2B;
+    color: #FBF7F1;
+  }
+}
+
+/* ========================================
+   FITAURA · UTILITY HELPERS
+   ======================================== */
+.eyebrow {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #D14F2B;
+}
+
+.divider-line {
+  display: inline-block;
+  width: 2.5rem;
+  height: 1px;
+  background-color: currentColor;
+  vertical-align: middle;
+  opacity: 0.6;
+}
+
+/* ========================================
    ANIMATIONS & EFFECTS
    ======================================== */
 
@@ -615,7 +664,7 @@ img {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #2563eb 0%, #1e40af 50%, #0c4a6e 100%);
+  background: linear-gradient(135deg, #FBF7F1 0%, #EFE3D1 50%, #E5D2B8 100%);
   animation: splashFadeOut 0.5s ease-out 1.5s forwards;
 }
 
@@ -682,4 +731,266 @@ img {
 .vertical-text {
   writing-mode: vertical-rl;
   text-orientation: mixed;
+}
+
+/* ========================================
+   FITAURA · HORIZONTAL MARQUEE
+   Used by the homepage CategoryGrid to auto-scroll an editorial row
+   of category cards. The trick: render the list twice end-to-end and
+   translate the inner track by -50% in a perfect loop, which makes
+   the seam invisible.
+
+   .marquee     → clip-mask wrapper (overflow hidden, edge fade)
+   .marquee-track → flex row that actually moves
+   ----
+   • Pauses on hover so the user can click a card.
+   • Respects prefers-reduced-motion (no animation, no horizontal scroll).
+   • Animation duration scales with viewport via custom-property fallback.
+   ======================================== */
+
+@keyframes marqueeScroll {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.marquee {
+  position: relative;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, transparent 0, black 6%, black 94%, transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, black 6%, black 94%, transparent 100%);
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marqueeScroll var(--marquee-duration, 45s) linear infinite;
+  will-change: transform;
+}
+
+.marquee:hover .marquee-track,
+.marquee:focus-within .marquee-track {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee {
+    -webkit-mask-image: none;
+    mask-image: none;
+    overflow-x: auto;
+  }
+
+  .marquee-track {
+    animation: none;
+  }
+}
+
+/* ========================================
+   FITAURA · EDITORIAL BLOG TYPOGRAPHY
+   `.blog-content` is the wrapper around the sanitized HTML in
+   /blog/[id]. The `--editorial` modifier adds the magazine-style
+   drop-cap on the first paragraph.
+   ======================================== */
+
+.blog-content {
+  color: #4A4A3F;
+  font-size: 17px;
+  line-height: 1.75;
+}
+
+.blog-content > * + * {
+  margin-top: 1.5rem;
+}
+
+.blog-content p {
+  font-size: inherit;
+  line-height: inherit;
+  color: #4A4A3F;
+}
+
+.blog-content h2 {
+  font-family: var(--font-display, 'Playfair Display', Georgia, serif);
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  font-weight: 700;
+  color: #26261F;
+  margin-top: 3rem;
+  margin-bottom: 1rem;
+}
+
+.blog-content h3 {
+  font-family: var(--font-display, 'Playfair Display', Georgia, serif);
+  font-size: clamp(1.35rem, 2.2vw, 1.65rem);
+  line-height: 1.15;
+  letter-spacing: -0.005em;
+  font-weight: 700;
+  color: #26261F;
+  margin-top: 2.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.blog-content h4 {
+  font-size: 0.72rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: #D14F2B;
+  margin-top: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.blog-content a {
+  color: #D14F2B;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition: color 0.2s;
+}
+
+.blog-content a:hover {
+  color: #26261F;
+}
+
+.blog-content strong {
+  color: #26261F;
+  font-weight: 600;
+}
+
+.blog-content em {
+  font-style: italic;
+  color: #4A4A3F;
+}
+
+.blog-content ul,
+.blog-content ol {
+  padding-left: 1.5rem;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+.blog-content ul {
+  list-style: none;
+}
+
+.blog-content ul li {
+  position: relative;
+  padding-left: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.blog-content ul li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.78em;
+  width: 0.5rem;
+  height: 1px;
+  background-color: #D14F2B;
+}
+
+.blog-content ol {
+  list-style: decimal;
+}
+
+.blog-content ol li {
+  padding-left: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.blog-content blockquote {
+  margin: 2.5rem 0;
+  padding: 0 0 0 1.75rem;
+  border-left: 2px solid #D14F2B;
+  font-family: var(--font-display, 'Playfair Display', Georgia, serif);
+  font-size: clamp(1.2rem, 2.4vw, 1.6rem);
+  line-height: 1.35;
+  color: #26261F;
+  font-style: italic;
+}
+
+.blog-content blockquote p {
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+}
+
+.blog-content blockquote cite,
+.blog-content blockquote footer {
+  display: block;
+  margin-top: 1rem;
+  font-family: inherit;
+  font-style: normal;
+  font-size: 0.72rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: #8A8A78;
+}
+
+.blog-content img,
+.blog-content figure {
+  display: block;
+  width: 100%;
+  margin: 2.5rem 0;
+}
+
+.blog-content figure img {
+  margin: 0;
+}
+
+.blog-content figcaption {
+  margin-top: 0.75rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: #8A8A78;
+  text-align: center;
+}
+
+.blog-content hr {
+  margin: 3rem auto;
+  width: 4rem;
+  border: 0;
+  border-top: 1px solid #D14F2B;
+}
+
+.blog-content code {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 0.9em;
+  background: #EFE3D1;
+  padding: 0.15em 0.4em;
+  border-radius: 2px;
+  color: #26261F;
+}
+
+.blog-content pre {
+  background: #26261F;
+  color: #FBF7F1;
+  padding: 1.25rem;
+  overflow-x: auto;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  margin: 2rem 0;
+}
+
+.blog-content pre code {
+  background: transparent;
+  padding: 0;
+  color: inherit;
+}
+
+/* Drop-cap on the first paragraph of editorial articles. Optical
+   alignment keeps it grounded to the baseline of line 1. */
+.blog-content--editorial > p:first-of-type::first-letter {
+  float: left;
+  font-family: var(--font-display, 'Playfair Display', Georgia, serif);
+  font-size: 4.5rem;
+  line-height: 0.85;
+  font-weight: 700;
+  color: #D14F2B;
+  margin: 0.25rem 0.65rem -0.25rem 0;
+  padding-top: 0.15rem;
 }

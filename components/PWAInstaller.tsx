@@ -68,26 +68,46 @@ export default function PWAInstaller() {
     window.addEventListener('beforeinstallprompt', handleBeforeInstall);
     window.addEventListener('appinstalled', handleInstalled);
 
-    // Register service worker with update detection
     if ('serviceWorker' in navigator) {
+      const isProduction = process.env.NODE_ENV === 'production';
+
+      if (!isProduction) {
+        // DEV MODE: never run a service worker. Aggressively unregister any
+        // leftover registration (e.g. from a previous prod build or a stale
+        // version) and clear every cache so we don't serve pre-debrand HTML
+        // out of the cache and trigger hydration mismatches.
+        navigator.serviceWorker.getRegistrations().then((regs) => {
+          regs.forEach((reg) => {
+            console.log('[PWA] Dev mode — unregistering stale service worker:', reg.scope);
+            reg.unregister();
+          });
+        });
+        if (typeof caches !== 'undefined') {
+          caches.keys().then((keys) => {
+            keys.forEach((key) => {
+              console.log('[PWA] Dev mode — clearing stale cache:', key);
+              caches.delete(key);
+            });
+          });
+        }
+        return;
+      }
+
       navigator.serviceWorker
         .register('/service-worker.js', { scope: '/' })
         .then((registration) => {
           console.log('[PWA] Service Worker registered with scope:', registration.scope);
 
-          // Check for updates every 60 minutes
           setInterval(() => {
             registration.update();
           }, 60 * 60 * 1000);
 
-          // Listen for new service worker
           registration.addEventListener('updatefound', () => {
             const newWorker = registration.installing;
             if (!newWorker) return;
 
             newWorker.addEventListener('statechange', () => {
               if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                // New version available
                 window.dispatchEvent(new CustomEvent('sw-update-available', {
                   detail: { registration }
                 }));
@@ -99,7 +119,6 @@ export default function PWAInstaller() {
           console.error('[PWA] Service Worker registration failed:', error);
         });
 
-      // Handle controller change (new SW activated)
       let refreshing = false;
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         if (!refreshing) {

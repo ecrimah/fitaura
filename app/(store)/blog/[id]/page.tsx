@@ -1,422 +1,416 @@
 import Link from 'next/link';
+import Image from 'next/image';
+import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { sanitizeHtml } from '@/lib/sanitize';
+import {
+  StructuredData,
+  generateBlogPostingSchema,
+  generateBreadcrumbSchema,
+} from '@/components/SEOHead';
 
-export async function generateStaticParams() {
-  return [
-    { id: '1' },
-    { id: '2' },
-    { id: '3' },
-  ];
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://shopfitaura.com';
+
+export const revalidate = 60;
+
+// The dynamic segment is named `[id]` for legacy reasons but always
+// receives the post slug. Keep it that way to avoid breaking any
+// external links already in the wild.
+type Params = { id: string };
+
+interface BlogPostFull {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string | null;
+  content: string;
+  featured_image: string | null;
+  tags: string[] | null;
+  published_at: string | null;
+  created_at: string;
+  seo_title: string | null;
+  seo_description: string | null;
 }
 
-export default async function BlogPostPage({ params }: { params: Promise<{ id: string }> }) {
+async function getPostBySlug(slug: string): Promise<BlogPostFull | null> {
+  if (!isSupabaseConfigured) return null;
+  try {
+    const { data, error } = await supabase
+      .from('blog_posts')
+      .select('id, slug, title, excerpt, content, featured_image, tags, published_at, created_at, seo_title, seo_description')
+      .eq('slug', slug)
+      .eq('status', 'published')
+      .maybeSingle();
+    if (error || !data) return null;
+    return data as BlogPostFull;
+  } catch {
+    return null;
+  }
+}
+
+async function getRelated(slug: string, tags: string[] | null) {
+  if (!isSupabaseConfigured) return [];
+  try {
+    let query = supabase
+      .from('blog_posts')
+      .select('id, slug, title, excerpt, featured_image, published_at, created_at, tags')
+      .eq('status', 'published')
+      .neq('slug', slug)
+      .order('published_at', { ascending: false, nullsFirst: false })
+      .limit(3);
+    if (tags && tags.length > 0) {
+      query = query.overlaps('tags', tags);
+    }
+    const { data } = await query;
+    return data ?? [];
+  } catch {
+    return [];
+  }
+}
+
+export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { id } = await params;
+  const post = await getPostBySlug(id);
+  if (!post) {
+    return {
+      title: 'Article not found',
+      description: 'The article you are looking for is no longer available.',
+      robots: { index: false, follow: true },
+    };
+  }
+  const url = `${SITE_URL}/blog/${post.slug}`;
+  const ogImage = post.featured_image || `${SITE_URL}/og-image.png`;
+  const description = (post.seo_description || post.excerpt || `Read "${post.title}" on the FITAURA Journal.`).slice(0, 160);
+  const publishedTime = post.published_at || post.created_at;
 
-  const posts: any = {
-    '1': {
-      title: 'The Ultimate Guide to Online Shopping in Ghana',
-      image: 'https://readdy.ai/api/search-image?query=Modern%20African%20woman%20shopping%20online%20on%20laptop%20in%20bright%20contemporary%20home%20office%20coffee%20cup%20plants%20natural%20light%20relaxed%20lifestyle%20photography%20minimal%20clean%20background&width=1200&height=600&seq=blogpost1&orientation=landscape',
-      category: 'Shopping Tips',
-      date: 'December 15, 2024',
-      readTime: '8 min read',
-      author: 'Ama Osei',
-      content: `
-        <p>Online shopping has revolutionised the way Ghanaians purchase products, offering convenience, variety, and competitive prices. However, navigating the world of ecommerce can be daunting if you're new to it. This comprehensive guide will help you shop online safely and confidently.</p>
-
-        <h2>Why Shop Online in Ghana?</h2>
-        <p>The benefits of online shopping are numerous. You can browse thousands of products from the comfort of your home, compare prices easily, read reviews from other customers, and have items delivered directly to your doorstep. For busy professionals and families, online shopping saves valuable time.</p>
-
-        <p>Moreover, online stores often offer exclusive deals and promotions that aren't available in physical shops. You can shop at any time of day or night, without worrying about store opening hours or traffic.</p>
-
-        <h2>Choosing a Reliable Online Store</h2>
-        <p>Not all online stores are created equal. When shopping online, look for these trust signals:</p>
-        <ul>
-          <li><strong>Secure website:</strong> The URL should start with "https://" and display a padlock icon</li>
-          <li><strong>Clear contact information:</strong> Phone numbers, email addresses, and physical address should be visible</li>
-          <li><strong>Customer reviews:</strong> Real testimonials from verified buyers</li>
-          <li><strong>Return policy:</strong> Clear terms for returns and refunds</li>
-          <li><strong>Professional design:</strong> Well-organised website with detailed product information</li>
-        </ul>
-
-        <h2>Payment Methods in Ghana</h2>
-        <p>Ghanaian online shoppers have several secure payment options:</p>
-        <ul>
-          <li><strong>Mobile Money:</strong> MTN, Vodafone, and AirtelTigo offer convenient payment options</li>
-          <li><strong>Credit/Debit Cards:</strong> Visa and Mastercard are widely accepted</li>
-          <li><strong>Moolre Payment:</strong> Our integrated payment gateway for seamless mobile money and card payments</li>
-        </ul>
-
-        <p>Always ensure you're on a secure connection when entering payment details. Avoid using public Wi-Fi for transactions.</p>
-
-        <h2>Understanding Delivery Options</h2>
-        <p>Delivery times and costs vary by location. In Accra and major cities, you can often get next-day delivery. Remote areas may take longer. Always check:</p>
-        <ul>
-          <li>Estimated delivery time for your location</li>
-          <li>Delivery costs (many stores offer free shipping above a certain amount)</li>
-          <li>Tracking availability</li>
-          <li>What happens if you're not home for delivery</li>
-        </ul>
-
-        <h2>Tips for Safe Online Shopping</h2>
-        <ol>
-          <li><strong>Research the seller:</strong> Check reviews and ratings before purchasing</li>
-          <li><strong>Read product descriptions carefully:</strong> Note sizes, colours, materials, and specifications</li>
-          <li><strong>Save confirmation emails:</strong> Keep records of your orders and payment</li>
-          <li><strong>Check return policies:</strong> Understand your options if the product isn't suitable</li>
-          <li><strong>Use strong passwords:</strong> Create unique passwords for shopping accounts</li>
-          <li><strong>Monitor your accounts:</strong> Check bank statements for unauthorised charges</li>
-          <li><strong>Be wary of deals that seem too good to be true:</strong> Scammers often lure victims with unrealistic discounts</li>
-        </ol>
-
-        <h2>What to Do If Something Goes Wrong</h2>
-        <p>Despite best efforts, issues can arise. If you receive the wrong item, a damaged product, or don't receive your order at all:</p>
-        <ul>
-          <li>Contact the seller immediately with photos and order details</li>
-          <li>Most reputable stores will offer a replacement or refund</li>
-          <li>If the store is unresponsive, contact your bank or mobile money provider</li>
-          <li>Report fraudulent sellers to relevant authorities</li>
-        </ul>
-
-        <h2>Making the Most of Online Shopping</h2>
-        <p>To enhance your online shopping experience:</p>
-        <ul>
-          <li>Sign up for newsletters to get exclusive deals and early access to sales</li>
-          <li>Use wishlists to save items you're interested in</li>
-          <li>Follow your favourite stores on social media for flash sales</li>
-          <li>Take advantage of loyalty programmes and reward points</li>
-          <li>Shop during major sales events like Black Friday for better prices</li>
-        </ul>
-
-        <h2>Conclusion</h2>
-        <p>Online shopping in Ghana is safe, convenient, and increasingly popular. By following these guidelines, you can enjoy all the benefits whilst minimising risks. Start with small purchases from reputable stores to build confidence, and soon you'll wonder how you ever lived without the convenience of online shopping.</p>
-
-        <p>Happy shopping!</p>
-      `
+  return {
+    title: post.seo_title || post.title,
+    description,
+    keywords: post.tags ?? undefined,
+    alternates: { canonical: url },
+    openGraph: {
+      type: 'article',
+      title: post.title,
+      description,
+      url,
+      siteName: 'FITAURA',
+      locale: 'en_CA',
+      publishedTime,
+      modifiedTime: post.created_at,
+      tags: post.tags ?? undefined,
+      images: [{ url: ogImage, width: 1200, height: 630, alt: post.title }],
     },
-    '2': {
-      title: '10 Must-Have Products for Your Home This Season',
-      image: 'https://readdy.ai/api/search-image?query=Beautiful%20modern%20African%20home%20interior%20with%20stylish%20furniture%20decor%20items%20plants%20bright%20natural%20lighting%20contemporary%20design%20magazine%20quality%20photography&width=1200&height=600&seq=blogpost2&orientation=landscape',
-      category: 'Home & Living',
-      date: 'December 12, 2024',
-      readTime: '6 min read',
-      author: 'Yaw Darko',
-      content: `
-        <p>Transform your living space with these carefully selected must-have products. Whether you're refreshing your décor or starting from scratch, these items will elevate your home's comfort and style.</p>
-
-        <h2>1. Smart LED Lighting</h2>
-        <p>Modern LED bulbs with adjustable brightness and colour temperature can dramatically change your home's ambience. Control them from your phone, set schedules, and reduce energy costs.</p>
-
-        <h2>2. Premium Bedding Set</h2>
-        <p>Invest in quality sheets, duvet covers, and pillows. Good sleep is essential, and premium bedding makes a noticeable difference. Look for breathable fabrics suitable for Ghana's climate.</p>
-
-        <h2>3. Air Purifier</h2>
-        <p>With increasing air quality concerns, an air purifier removes dust, pollen, and pollutants, creating a healthier indoor environment for your family.</p>
-
-        <h2>4. Organisational Storage Solutions</h2>
-        <p>Declutter your space with stylish storage boxes, baskets, and shelving units. A well-organised home feels more spacious and serene.</p>
-
-        <h2>5. Indoor Plants</h2>
-        <p>Bring nature indoors with low-maintenance plants like snake plants or pothos. They purify air, add visual interest, and create a calming atmosphere.</p>
-
-        <h2>6. Quality Cookware Set</h2>
-        <p>Upgrade your kitchen with durable pots and pans. Quality cookware distributes heat evenly, lasts longer, and makes cooking more enjoyable.</p>
-
-        <h2>7. Comfortable Throw Pillows</h2>
-        <p>Instantly refresh your living room or bedroom with decorative throw pillows. Mix textures and colours to create visual interest.</p>
-
-        <h2>8. Smart Power Strip</h2>
-        <p>Protect your electronics and reduce energy waste with a smart power strip that cuts power to devices in standby mode.</p>
-
-        <h2>9. Bath Towel Set</h2>
-        <p>Luxury doesn't have to be expensive. A set of soft, absorbent towels in coordinating colours makes your bathroom feel like a spa.</p>
-
-        <h2>10. Decorative Mirror</h2>
-        <p>Mirrors make spaces feel larger and brighter by reflecting light. Choose a statement piece that complements your décor style.</p>
-
-        <h2>Shopping Smart</h2>
-        <p>When purchasing home products, consider quality over quantity. It's better to invest in a few well-made items than many cheap ones that won't last. Read reviews, compare prices, and take advantage of seasonal sales.</p>
-
-        <p>Start with the essentials and gradually build your collection. Your home should reflect your personality and meet your practical needs.</p>
-      `
+    twitter: {
+      card: 'summary_large_image',
+      title: post.title,
+      description,
+      images: [ogImage],
+      site: '@fitaura_ca',
+      creator: '@fitaura_ca',
     },
-    '3': {
-      title: 'How to Choose Quality Products: A Buyer\'s Guide',
-      image: 'https://readdy.ai/api/search-image?query=Person%20examining%20product%20quality%20checking%20labels%20and%20details%20in%20bright%20retail%20setting%20closeup%20hands%20inspecting%20merchandise%20professional%20photography%20clean%20background&width=1200&height=600&seq=blogpost3&orientation=landscape',
-      category: 'Buying Guide',
-      date: 'December 10, 2024',
-      readTime: '7 min read',
-      author: 'Kwame Mensah',
-      content: `
-        <p>In a market flooded with options, choosing quality products can be challenging. This guide will help you identify genuine quality and make purchasing decisions you won't regret.</p>
-
-        <h2>Understanding Quality Indicators</h2>
-        <p>Quality isn't just about price. A well-made product offers durability, functionality, and value for money. Here's what to look for:</p>
-
-        <h3>Material Quality</h3>
-        <p>Examine the materials used. Natural fibres, solid wood, stainless steel, and durable plastics indicate better quality. Avoid products that feel flimsy or have a chemical smell.</p>
-
-        <h3>Construction and Craftsmanship</h3>
-        <p>Check seams, joints, and finishes. Quality products have neat stitching, smooth edges, and secure fastenings. Poor construction is evident in loose threads, uneven surfaces, and wobbly parts.</p>
-
-        <h3>Brand Reputation</h3>
-        <p>Established brands invest in quality control and customer satisfaction. Research brands before purchasing. Read reviews and check how they handle complaints.</p>
-
-        <h2>Reading Product Descriptions</h2>
-        <p>Detailed product descriptions are a good sign. Quality sellers provide:</p>
-        <ul>
-          <li>Precise dimensions and specifications</li>
-          <li>Material composition</li>
-          <li>Care instructions</li>
-          <li>Warranty information</li>
-          <li>Multiple clear photos from different angles</li>
-        </ul>
-
-        <h2>The Power of Reviews</h2>
-        <p>Customer reviews are invaluable. Look for:</p>
-        <ul>
-          <li>Verified purchase badges</li>
-          <li>Detailed feedback with photos</li>
-          <li>Recent reviews (product quality can change)</li>
-          <li>How sellers respond to negative reviews</li>
-          <li>Overall rating trends</li>
-        </ul>
-
-        <p>Be sceptical of products with only perfect 5-star reviews or very few reviews relative to sales.</p>
-
-        <h2>Price vs. Value</h2>
-        <p>Expensive doesn't always mean quality, and cheap isn't always poor. Consider:</p>
-        <ul>
-          <li><strong>Cost per use:</strong> A GHS 200 item used daily for 5 years offers better value than a GHS 50 item replaced yearly</li>
-          <li><strong>Warranty and guarantees:</strong> Quality manufacturers stand behind their products</li>
-          <li><strong>Maintenance costs:</strong> Some cheap items require expensive upkeep</li>
-          <li><strong>Resale value:</strong> Quality items retain value better</li>
-        </ul>
-
-        <h2>Red Flags to Avoid</h2>
-        <p>Watch out for these warning signs:</p>
-        <ul>
-          <li>Vague or missing product information</li>
-          <li>No return policy or unclear terms</li>
-          <li>Prices significantly below market average</li>
-          <li>Poor website quality and numerous spelling errors</li>
-          <li>Lack of contact information</li>
-          <li>Pressure tactics urging immediate purchase</li>
-          <li>No physical address or company details</li>
-        </ul>
-
-        <h2>Category-Specific Tips</h2>
-
-        <h3>Electronics</h3>
-        <ul>
-          <li>Check for official warranty from manufacturer</li>
-          <li>Verify authenticity through serial numbers</li>
-          <li>Compare specifications carefully</li>
-          <li>Research common issues with the model</li>
-        </ul>
-
-        <h3>Clothing and Textiles</h3>
-        <ul>
-          <li>Natural fibres often last longer</li>
-          <li>Check fabric weight (heavier usually means quality)</li>
-          <li>Examine stitching and seams</li>
-          <li>Verify colour fastness information</li>
-        </ul>
-
-        <h3>Furniture</h3>
-        <ul>
-          <li>Solid wood beats particle board</li>
-          <li>Test weight capacity</li>
-          <li>Check joinery methods</li>
-          <li>Assess cushion density and spring quality</li>
-        </ul>
-
-        <h2>Making the Final Decision</h2>
-        <p>Before clicking "buy," ask yourself:</p>
-        <ol>
-          <li>Do I need this product?</li>
-          <li>Have I researched alternatives?</li>
-          <li>Is this the right time to buy? (sales, seasons)</li>
-          <li>Can I afford it without financial strain?</li>
-          <li>Does it meet my quality standards?</li>
-          <li>What's the return policy if I'm unsatisfied?</li>
-        </ol>
-
-        <h2>After Purchase</h2>
-        <p>Protect your investment:</p>
-        <ul>
-          <li>Inspect items immediately upon delivery</li>
-          <li>Keep packaging until you're certain you'll keep it</li>
-          <li>Register warranties</li>
-          <li>Follow care instructions</li>
-          <li>Leave honest reviews to help other shoppers</li>
-        </ul>
-
-        <h2>Conclusion</h2>
-        <p>Choosing quality products requires research, patience, and critical thinking. Don't rush important purchases. Take time to compare options, read reviews, and verify seller credibility. Quality products cost more upfront but offer better value long-term through durability, performance, and satisfaction.</p>
-
-        <p>Remember: the bitterness of poor quality lingers long after the sweetness of a low price is forgotten.</p>
-      `
-    }
   };
+}
 
-  const post = posts[id] || posts['1'];
+function formatDate(value: string | null, long = false): string {
+  if (!value) return '';
+  return new Date(value).toLocaleDateString('en-CA', {
+    year: 'numeric',
+    month: long ? 'long' : 'short',
+    day: 'numeric',
+  });
+}
 
-  const relatedPosts = [
+function readTime(content: string): string {
+  const words = content.replace(/<[^>]*>/g, ' ').split(/\s+/).filter(Boolean).length;
+  const minutes = Math.max(2, Math.ceil(words / 220));
+  return `${minutes} min read`;
+}
+
+export default async function BlogPostPage({ params }: { params: Promise<Params> }) {
+  const { id } = await params;
+  const post = await getPostBySlug(id);
+
+  if (!post) {
+    notFound();
+  }
+
+  const related = await getRelated(post.slug, post.tags);
+  const sanitizedContent = sanitizeHtml(post.content);
+  const postUrl = `${SITE_URL}/blog/${post.slug}`;
+  const issueDate = post.published_at ?? post.created_at;
+
+  const blogPostingSchema = generateBlogPostingSchema({
+    title: post.title,
+    description: post.excerpt || post.title,
+    url: postUrl,
+    image: post.featured_image || `${SITE_URL}/og-image.png`,
+    publishedTime: issueDate,
+    modifiedTime: post.created_at,
+    tags: post.tags ?? undefined,
+  });
+  const breadcrumbSchema = generateBreadcrumbSchema([
+    { name: 'Home', url: SITE_URL },
+    { name: 'Journal', url: `${SITE_URL}/blog` },
+    { name: post.title, url: postUrl },
+  ]);
+
+  const shareLinks = [
     {
-      id: id === '1' ? '2' : '1',
-      title: id === '1' ? '10 Must-Have Products for Your Home This Season' : 'The Ultimate Guide to Online Shopping in Ghana',
-      image: id === '1' ?
-        'https://readdy.ai/api/search-image?query=Beautiful%20modern%20African%20home%20interior%20with%20stylish%20furniture%20decor%20items%20plants%20bright%20natural%20lighting%20contemporary%20design%20magazine%20quality%20photography&width=600&height=400&seq=related1&orientation=landscape' :
-        'https://readdy.ai/api/search-image?query=Modern%20African%20woman%20shopping%20online%20on%20laptop%20in%20bright%20contemporary%20home%20office%20coffee%20cup%20plants%20natural%20light%20relaxed%20lifestyle%20photography%20minimal%20clean%20background&width=600&height=400&seq=related2&orientation=landscape',
-      category: id === '1' ? 'Home & Living' : 'Shopping Tips'
+      label: 'X',
+      icon: 'ri-twitter-x-line',
+      href: `https://twitter.com/intent/tweet?url=${encodeURIComponent(postUrl)}&text=${encodeURIComponent(post.title)}`,
     },
     {
-      id: id === '3' ? '1' : '3',
-      title: id === '3' ? 'The Ultimate Guide to Online Shopping in Ghana' : 'How to Choose Quality Products: A Buyer\'s Guide',
-      image: id === '3' ?
-        'https://readdy.ai/api/search-image?query=Modern%20African%20woman%20shopping%20online%20on%20laptop%20in%20bright%20contemporary%20home%20office%20coffee%20cup%20plants%20natural%20light%20relaxed%20lifestyle%20photography%20minimal%20clean%20background&width=600&height=400&seq=related3&orientation=landscape' :
-        'https://readdy.ai/api/search-image?query=Person%20examining%20product%20quality%20checking%20labels%20and%20details%20in%20bright%20retail%20setting%20closeup%20hands%20inspecting%20merchandise%20professional%20photography%20clean%20background&width=600&height=400&seq=related4&orientation=landscape',
-      category: id === '3' ? 'Shopping Tips' : 'Buying Guide'
-    }
+      label: 'Facebook',
+      icon: 'ri-facebook-fill',
+      href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`,
+    },
+    {
+      label: 'Pinterest',
+      icon: 'ri-pinterest-line',
+      href: `https://pinterest.com/pin/create/button/?url=${encodeURIComponent(postUrl)}&description=${encodeURIComponent(post.title)}${post.featured_image ? `&media=${encodeURIComponent(post.featured_image)}` : ''}`,
+    },
+    {
+      label: 'Email',
+      icon: 'ri-mail-line',
+      href: `mailto:?subject=${encodeURIComponent(post.title)}&body=${encodeURIComponent(`Thought you'd enjoy this from FITAURA: ${postUrl}`)}`,
+    },
   ];
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="relative h-96 bg-gray-900">
-        <img
-          src={post.image}
-          alt={post.title}
-          className="w-full h-full object-cover opacity-50"
-        />
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <span className="inline-block bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-medium mb-4">
-              {post.category}
-            </span>
-            <h1 className="text-5xl font-bold text-white mb-6">{post.title}</h1>
-            <div className="flex items-center justify-center gap-6 text-blue-100">
-              <span className="flex items-center gap-2">
-                <i className="ri-user-line"></i>
-                {post.author}
-              </span>
-              <span className="flex items-center gap-2">
-                <i className="ri-calendar-line"></i>
-                {post.date}
-              </span>
-              <span className="flex items-center gap-2">
-                <i className="ri-time-line"></i>
-                {post.readTime}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
+    <article className="bg-cream-50 text-ink-900">
+      <StructuredData data={blogPostingSchema} />
+      <StructuredData data={breadcrumbSchema} />
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <article className="prose prose-lg max-w-none">
-          <div
-            className="text-gray-600 leading-relaxed"
-            dangerouslySetInnerHTML={{ __html: sanitizeHtml(post.content) }}
-            style={{
-              fontSize: '1.125rem',
-              lineHeight: '1.8'
-            }}
-          />
-        </article>
-
-        <div className="mt-12 pt-12 border-t border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500 mb-2">Written by</p>
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                  <i className="ri-user-line text-blue-700 text-xl"></i>
-                </div>
-                <div>
-                  <p className="font-bold text-gray-900">{post.author}</p>
-                  <p className="text-sm text-gray-500">Content Writer</p>
-                </div>
-              </div>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500 mb-3">Share this article</p>
-              <div className="flex gap-3">
-                <button className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center hover:bg-blue-100 transition-colors cursor-pointer">
-                  <i className="ri-facebook-fill text-gray-600"></i>
-                </button>
-                <button className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center hover:bg-blue-100 transition-colors cursor-pointer">
-                  <i className="ri-twitter-fill text-gray-600"></i>
-                </button>
-                <button className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center hover:bg-blue-100 transition-colors cursor-pointer">
-                  <i className="ri-linkedin-fill text-gray-600"></i>
-                </button>
-                <button className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center hover:bg-blue-100 transition-colors cursor-pointer">
-                  <i className="ri-whatsapp-line text-gray-600"></i>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-16">
-          <h2 className="text-3xl font-bold text-gray-900 mb-8">Related Articles</h2>
-          <div className="grid md:grid-cols-2 gap-8">
-            {relatedPosts.map((relatedPost) => (
-              <Link
-                key={relatedPost.id}
-                href={`/blog/${relatedPost.id}`}
-                className="bg-white border border-gray-200 rounded-2xl overflow-hidden hover:shadow-lg transition-all cursor-pointer"
-              >
-                <div className="relative h-48">
-                  <img
-                    src={relatedPost.image}
-                    alt={relatedPost.title}
-                    className="w-full h-full object-cover"
-                  />
-                  <span className="absolute top-4 left-4 bg-blue-700 text-white px-3 py-1 rounded-full text-xs font-medium">
-                    {relatedPost.category}
-                  </span>
-                </div>
-                <div className="p-6">
-                  <h3 className="text-xl font-bold text-gray-900 leading-tight">
-                    {relatedPost.title}
-                  </h3>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        <div className="mt-16 bg-gradient-to-br from-blue-700 to-blue-900 rounded-2xl p-12 text-center text-white">
-          <h2 className="text-3xl font-bold mb-4">Enjoyed This Article?</h2>
-          <p className="text-blue-100 mb-8 text-lg">
-            Subscribe to our newsletter for more shopping tips and exclusive offers
-          </p>
-          <form className="max-w-md mx-auto flex gap-3">
-            <input
-              type="email"
-              placeholder="Your email address"
-              className="flex-1 px-6 py-4 rounded-full text-gray-900 focus:ring-2 focus:ring-white"
+      {/* ─────────────────────────────────────────────────────────────
+          1 · CINEMATIC HERO
+          Full-bleed image with cream eyebrow + display headline laid
+          over a soft ink gradient. Matches the homepage hero cadence.
+          ─────────────────────────────────────────────────────────── */}
+      <header className="relative bg-ink-900 text-cream-50 overflow-hidden">
+        <div className="relative h-[68vh] min-h-[520px] max-h-[820px]">
+          {post.featured_image && (
+            <Image
+              src={post.featured_image}
+              alt={post.title}
+              fill
+              priority
+              sizes="100vw"
+              className="object-cover object-center opacity-90"
             />
-            <button
-              type="submit"
-              className="bg-white text-blue-700 px-8 py-4 rounded-full font-medium hover:bg-blue-50 transition-colors whitespace-nowrap"
-            >
-              Subscribe
-            </button>
-          </form>
-        </div>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-ink-900 via-ink-900/55 to-ink-900/20" />
 
-        <div className="mt-12 text-center">
+          {/* Breadcrumb sits at the top edge */}
+          <nav
+            aria-label="Breadcrumb"
+            className="absolute inset-x-0 top-0 z-10"
+          >
+            <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 lg:pt-8">
+              <ol className="flex items-center gap-2 text-[10px] tracking-[0.24em] uppercase text-cream-100/70">
+                <li>
+                  <Link href="/" className="hover:text-cream-50 transition-colors">Home</Link>
+                </li>
+                <li aria-hidden>/</li>
+                <li>
+                  <Link href="/blog" className="hover:text-cream-50 transition-colors">Journal</Link>
+                </li>
+                <li aria-hidden>/</li>
+                <li className="text-sienna-500 truncate max-w-[40vw]">{post.tags?.[0] ?? 'Story'}</li>
+              </ol>
+            </div>
+          </nav>
+
+          <div className="absolute inset-x-0 bottom-0">
+            <div className="max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-10 pb-14 lg:pb-20">
+              <div className="flex items-center gap-3 text-[11px] tracking-[0.22em] uppercase text-cream-100/80 mb-5">
+                <span className="text-sienna-500 font-semibold">
+                  {post.tags?.[0] ?? 'Story'}
+                </span>
+                <span className="h-px w-8 bg-cream-100/40" />
+                <span>{formatDate(issueDate, true)}</span>
+                <span aria-hidden>·</span>
+                <span>{readTime(post.content)}</span>
+              </div>
+              <h1 className="font-display text-[40px] sm:text-[60px] lg:text-[80px] xl:text-[92px] leading-[0.92] tracking-tight max-w-4xl">
+                {post.title}
+              </h1>
+              {post.excerpt && (
+                <p className="mt-7 max-w-2xl text-cream-100/85 leading-relaxed text-base lg:text-[19px] font-light">
+                  {post.excerpt}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* ─────────────────────────────────────────────────────────────
+          2 · BYLINE STRIP
+          Slim band between the hero and the body. Issue + share.
+          ─────────────────────────────────────────────────────────── */}
+      <section className="bg-white border-b border-cream-200">
+        <div className="max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-10 py-5 flex items-center justify-between gap-6 flex-wrap">
+          <div className="flex items-center gap-3 text-[10px] tracking-[0.24em] uppercase text-ink-500">
+            <span className="font-semibold text-ink-900">FITAURA Studio</span>
+            <span className="h-px w-6 bg-ink-200" />
+            <span>Issue {new Date(issueDate).getFullYear()}</span>
+          </div>
+          <ul className="flex items-center gap-2">
+            <li className="text-[10px] tracking-[0.24em] uppercase text-ink-500 mr-2">Share /</li>
+            {shareLinks.map((link) => (
+              <li key={link.label}>
+                <a
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Share on ${link.label}`}
+                  className="w-9 h-9 inline-flex items-center justify-center border border-ink-200 text-ink-700 hover:bg-ink-900 hover:text-cream-50 hover:border-ink-900 transition-colors"
+                >
+                  <i className={`${link.icon} text-sm`} aria-hidden></i>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* ─────────────────────────────────────────────────────────────
+          3 · ARTICLE BODY
+          The dropcap selector targets the first paragraph inside the
+          rendered prose. Custom styling pushed into globals.css would
+          be cleaner, but inline `style` keeps the article page self-
+          contained.
+          ─────────────────────────────────────────────────────────── */}
+      <div className="max-w-[760px] mx-auto px-4 sm:px-6 lg:px-10 py-16 lg:py-24">
+        <div
+          className="blog-content blog-content--editorial text-ink-700 leading-relaxed text-[17px] lg:text-[18px]"
+          dangerouslySetInnerHTML={{ __html: sanitizedContent }}
+        />
+
+        {/* Tag row */}
+        {post.tags && post.tags.length > 0 && (
+          <div className="mt-16 pt-8 border-t border-cream-200">
+            <span className="eyebrow mb-4 block">Filed under</span>
+            <div className="flex flex-wrap gap-2">
+              {post.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="px-3.5 py-1.5 bg-cream-100 border border-cream-200 text-[11px] tracking-[0.18em] uppercase text-ink-700"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Bottom share + back link */}
+        <div className="mt-12 pt-8 border-t border-cream-200 flex items-center justify-between flex-wrap gap-6">
           <Link
             href="/blog"
-            className="inline-flex items-center gap-2 text-blue-700 font-medium hover:gap-3 transition-all"
+            className="inline-flex items-center gap-2 text-ink-900 text-[11px] font-semibold tracking-[0.24em] uppercase hover:text-sienna-500 transition-colors"
           >
-            <i className="ri-arrow-left-line"></i>
-            Back to Blog
+            <i className="ri-arrow-left-line" aria-hidden></i>
+            All Stories
           </Link>
+          <ul className="flex items-center gap-2">
+            {shareLinks.map((link) => (
+              <li key={link.label}>
+                <a
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Share on ${link.label}`}
+                  className="w-9 h-9 inline-flex items-center justify-center border border-ink-200 text-ink-700 hover:bg-ink-900 hover:text-cream-50 hover:border-ink-900 transition-colors"
+                >
+                  <i className={`${link.icon} text-sm`} aria-hidden></i>
+                </a>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
-    </div>
+
+      {/* ─────────────────────────────────────────────────────────────
+          4 · KEEP READING
+          Editorial three-up. Reuses the journal index card pattern
+          for consistency.
+          ─────────────────────────────────────────────────────────── */}
+      {related.length > 0 && (
+        <section className="bg-cream-100 border-t border-cream-200">
+          <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 py-20 lg:py-24">
+            <div className="flex items-end justify-between flex-wrap gap-6 mb-12">
+              <div>
+                <span className="eyebrow mb-3 block">Keep reading</span>
+                <h2 className="font-display text-[32px] sm:text-[44px] lg:text-[52px] leading-[0.95] tracking-tight">
+                  MORE FROM THE STUDIO.
+                </h2>
+              </div>
+              <Link
+                href="/blog"
+                className="inline-flex items-center gap-2 text-ink-900 text-[11px] font-semibold tracking-[0.24em] uppercase hover:text-sienna-500 transition-colors"
+              >
+                The Archive <i className="ri-arrow-right-line" aria-hidden></i>
+              </Link>
+            </div>
+
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-10 lg:gap-12">
+              {related.map((rp, idx) => (
+                <Link key={rp.id} href={`/blog/${rp.slug}`} className="group block">
+                  <div className="relative aspect-[4/5] bg-cream-200 overflow-hidden mb-5">
+                    {rp.featured_image && (
+                      <Image
+                        src={rp.featured_image}
+                        alt={rp.title}
+                        fill
+                        sizes="(max-width: 768px) 100vw, 33vw"
+                        className="object-cover transition-transform duration-[1200ms] ease-out group-hover:scale-[1.04]"
+                      />
+                    )}
+                    <span className="absolute top-4 left-4 bg-cream-50/95 text-ink-900 px-3 py-1.5 text-[10px] tracking-[0.24em] uppercase font-semibold">
+                      {String(idx + 1).padStart(2, '0')}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-[10px] tracking-[0.22em] uppercase text-ink-500 mb-3">
+                    {rp.tags?.[0] && (
+                      <span className="text-sienna-500 font-semibold">{rp.tags[0]}</span>
+                    )}
+                    <span>{formatDate(rp.published_at ?? rp.created_at)}</span>
+                  </div>
+                  <h3 className="font-display text-xl sm:text-2xl leading-snug tracking-tight mb-3 group-hover:text-sienna-500 transition-colors duration-300">
+                    {rp.title}
+                  </h3>
+                  {rp.excerpt && (
+                    <p className="text-ink-500 text-sm leading-relaxed line-clamp-2">{rp.excerpt}</p>
+                  )}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────
+          5 · SHOP CTA
+          Closing pivot back to commerce.
+          ─────────────────────────────────────────────────────────── */}
+      <section className="bg-ink-900 text-cream-50">
+        <div className="max-w-[1000px] mx-auto px-4 sm:px-6 lg:px-10 py-20 lg:py-24 text-center">
+          <span className="eyebrow text-sienna-500 mb-5 block">Shop The Collection</span>
+          <h2 className="font-display text-[40px] sm:text-[54px] lg:text-[64px] leading-[0.95] tracking-tight mb-8">
+            <span className="block">CONFIDENCE</span>
+            <span className="block text-sienna-500">IN MOTION.</span>
+          </h2>
+          <Link
+            href="/shop"
+            className="inline-flex items-center gap-2 bg-sienna-500 hover:bg-sienna-600 text-cream-50 px-9 py-4 text-[11px] font-semibold tracking-[0.24em] uppercase transition-colors"
+          >
+            Shop Now <i className="ri-arrow-right-line" aria-hidden></i>
+          </Link>
+        </div>
+      </section>
+    </article>
   );
 }

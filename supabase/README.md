@@ -56,7 +56,7 @@ This folder contains all SQL migration files for your e-commerce store database.
 
 ### Method 1: Supabase Dashboard (Recommended)
 
-1. **Connect to Supabase** in Readdy.ai
+1. **Open your Supabase project dashboard**
 2. **Copy each SQL file content**
 3. **Go to Supabase Dashboard** → SQL Editor
 4. **Run migrations in order** (001 → 002 → 003 → 004 → 005)
@@ -190,7 +190,7 @@ CREATE TRIGGER your_trigger
 
 After running migrations:
 
-1. **Connect Supabase** in Readdy.ai
+1. **Connect your Supabase project**
 2. **Set up authentication** (email, Google, etc.)
 3. **Configure storage** for image uploads
 4. **Add products** via admin panel or API
@@ -234,4 +234,4 @@ After running migrations:
 
 ---
 
-**Ready to deploy?** Connect your Supabase project in Readdy.ai and run these migrations! 🚀
+**Ready to deploy?** Connect your Supabase project and run these migrations.

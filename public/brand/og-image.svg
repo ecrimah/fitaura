@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FBF7F1"/>
+      <stop offset="100%" stop-color="#F0E8DD"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#E5612D"/>
+      <stop offset="100%" stop-color="#B83F1E"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- Decorative right-side block -->
+  <rect x="900" y="0" width="300" height="630" fill="#D14F2B" opacity="0.06"/>
+  <rect x="1090" y="60" width="50" height="510" rx="25" fill="#D14F2B" opacity="0.18"/>
+
+  <!-- Eyebrow -->
+  <text x="100" y="180" font-family="'Inter','Helvetica','Arial',sans-serif" font-size="20" font-weight="600" fill="#26261F" letter-spacing="6" opacity="0.6">MODERN LIFESTYLE CLOTHING � CALGARY � CA</text>
+
+  <!-- Brand wordmark -->
+  <text x="100" y="340" font-family="'Anton','Impact','Bebas Neue',sans-serif" font-size="190" font-weight="400" fill="#26261F" letter-spacing="-4">F<tspan fill="url(#accent)">I</tspan>TAURA</text>
+
+  <!-- Accent rule -->
+  <rect x="100" y="370" width="170" height="6" rx="3" fill="#D14F2B"/>
+
+  <!-- Tagline -->
+  <text x="100" y="440" font-family="'Inter','Helvetica','Arial',sans-serif" font-size="34" font-weight="500" fill="#494945">Confidence In Motion.</text>
+
+  <!-- Subline -->
+  <text x="100" y="490" font-family="'Inter','Helvetica','Arial',sans-serif" font-size="22" font-weight="400" fill="#6B6B66">Gymwear � Athleisure � Fashion-forward apparel</text>
+
+  <!-- Domain -->
+  <text x="100" y="565" font-family="'Inter','Helvetica','Arial',sans-serif" font-size="20" font-weight="600" fill="#26261F" letter-spacing="4">SHOPFITAURA.COM</text>
+</svg>

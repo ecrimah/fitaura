@@ -5,10 +5,12 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import CheckoutSteps from '@/components/CheckoutSteps';
 import OrderSummary from '@/components/OrderSummary';
+import StripePaymentForm from '@/components/StripePaymentForm';
 import { useCart } from '@/context/CartContext';
 import { supabase } from '@/lib/supabase';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { useRecaptcha } from '@/hooks/useRecaptcha';
+import { REGION_NAMES, citiesForRegion } from '@/lib/canada-regions';
 
 export default function CheckoutPage() {
   usePageTitle('Checkout');
@@ -33,30 +35,18 @@ export default function CheckoutPage() {
     region: ''
   });
 
-  // Ghana Regions for dropdown
-  const ghanaRegions = [
-    'Greater Accra',
-    'Ashanti',
-    'Western',
-    'Central',
-    'Eastern',
-    'Northern',
-    'Volta',
-    'Upper East',
-    'Upper West',
-    'Brong-Ahafo',
-    'Ahafo',
-    'Bono',
-    'Bono East',
-    'North East',
-    'Savannah',
-    'Oti',
-    'Western North'
-  ];
+  const canadianRegions = REGION_NAMES;
+  const citySuggestions = citiesForRegion(shippingData.region);
 
   const [deliveryMethod, setDeliveryMethod] = useState('pickup');
-  const [paymentMethod, setPaymentMethod] = useState('moolre');
+  // Stripe is the only gateway. Kept as state so future provider toggles
+  // (e.g. saved cards, in-store cash-only) can plug in without a rewrite.
+  const [paymentMethod] = useState<'stripe'>('stripe');
   const [errors, setErrors] = useState<any>({});
+
+  // Order created at the end of step 2 so step 3 can render Stripe Elements
+  // against a real order_number / total.
+  const [pendingOrder, setPendingOrder] = useState<{ orderNumber: string; total: number; currency: string } | null>(null);
 
 
 
@@ -114,14 +104,24 @@ export default function CheckoutPage() {
     }
   };
 
+  /**
+   * Step 2 → Step 3.
+   *
+   * Creates the order in `pending` state and advances the UI to the Stripe
+   * payment step. The actual charge happens client-side via Stripe Elements
+   * (see <StripePaymentForm/>); the webhook then promotes the order to
+   * `paid` and triggers fulfilment notifications.
+   *
+   * Side effect: if the order has already been created (e.g. user goes
+   * back to step 2 and clicks Continue again), we skip recreation and
+   * jump straight to step 3.
+   */
   const handleContinueToPayment = async () => {
-    // Skip step 3 and directly initiate payment with default method (Moolre/Mobile Money)
-    await handlePlaceOrder();
-  };
+    if (pendingOrder) {
+      setCurrentStep(3);
+      return;
+    }
 
-
-
-  const handlePlaceOrder = async () => {
     if (cart.length === 0) {
       alert('Your cart is empty');
       return;
@@ -129,7 +129,6 @@ export default function CheckoutPage() {
 
     setIsLoading(true);
 
-    // reCAPTCHA verification
     const isHuman = await getToken('checkout');
     if (!isHuman) {
       alert('Security verification failed. Please try again.');
@@ -139,77 +138,75 @@ export default function CheckoutPage() {
 
     try {
       const orderNumber = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-      // Generate tracking number: SLI-XXXXXX (6-char alphanumeric)
-      const trackingId = Array.from({ length: 6 }, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random() * 32)]).join('');
+      const trackingId = Array.from(
+        { length: 6 },
+        () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random() * 32)],
+      ).join('');
       const trackingNumber = `SLI-${trackingId}`;
 
-      // 1. Create Order
       const { data: order, error: orderError } = await supabase
         .from('orders')
-        .insert([{
-          order_number: orderNumber,
-          user_id: user?.id || null, // Capture user_id if logged in
-          email: shippingData.email,
-          phone: shippingData.phone,
-          status: 'pending',
-          payment_status: 'pending',
-          currency: 'GHS',
-          subtotal: subtotal,
-          tax_total: tax,
-          shipping_total: shippingCost,
-          discount_total: 0,
-          total: total,
-          shipping_method: deliveryMethod,
-          payment_method: paymentMethod,
-          shipping_address: shippingData,
-          billing_address: shippingData, // Using same for now
-          metadata: {
-            guest_checkout: !user,
-            first_name: shippingData.firstName,
-            last_name: shippingData.lastName,
-            tracking_number: trackingNumber
-          }
-        }])
+        .insert([
+          {
+            order_number: orderNumber,
+            user_id: user?.id || null,
+            email: shippingData.email,
+            phone: shippingData.phone,
+            status: 'pending',
+            payment_status: 'pending',
+            currency: 'CAD',
+            subtotal: subtotal,
+            tax_total: tax,
+            shipping_total: shippingCost,
+            discount_total: 0,
+            total: total,
+            shipping_method: deliveryMethod,
+            payment_method: paymentMethod,
+            payment_provider: 'stripe',
+            shipping_address: shippingData,
+            billing_address: shippingData,
+            metadata: {
+              guest_checkout: !user,
+              first_name: shippingData.firstName,
+              last_name: shippingData.lastName,
+              tracking_number: trackingNumber,
+            },
+          },
+        ])
         .select()
         .single();
 
       if (orderError) throw orderError;
 
-      // 2. Create Order Items (with UUID validation)
-      // Helper to check if string is a valid UUID
-      const isValidUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
-      
-      // Build order items, resolving slugs to UUIDs if needed
-      const orderItems = [];
-      
-      // Batch-fetch product metadata (for preorder_shipping etc.)
-      const productIds = cart.map(item => item.id).filter(id => isValidUUID(id));
-      const { data: productsData } = productIds.length > 0
-        ? await supabase.from('products').select('id, metadata').in('id', productIds)
-        : { data: [] };
+      const isValidUUID = (str: string) =>
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+
+      const orderItems: any[] = [];
+      const productIds = cart.map((item) => item.id).filter((id) => isValidUUID(id));
+      const { data: productsData } =
+        productIds.length > 0
+          ? await supabase.from('products').select('id, metadata').in('id', productIds)
+          : { data: [] };
       const productMetaMap = new Map((productsData || []).map((p: any) => [p.id, p.metadata]));
-      
+
       for (const item of cart) {
         let productId = item.id;
-        
-        // If id is not a valid UUID, it might be a slug - try to resolve it
         if (!isValidUUID(productId)) {
           const { data: product } = await supabase
             .from('products')
             .select('id, metadata')
             .or(`slug.eq.${productId},id.eq.${productId}`)
             .single();
-          
           if (product) {
             productId = product.id;
             productMetaMap.set(product.id, product.metadata);
           } else {
-            throw new Error(`Product not found: ${item.name}. Please remove it from your cart and try again.`);
+            throw new Error(
+              `Product not found: ${item.name}. Please remove it from your cart and try again.`,
+            );
           }
         }
-        
         const prodMeta = productMetaMap.get(productId);
-        
         orderItems.push({
           order_id: order.id,
           product_id: productId,
@@ -221,20 +218,14 @@ export default function CheckoutPage() {
           metadata: {
             image: item.image,
             slug: item.slug,
-            preorder_shipping: prodMeta?.preorder_shipping || null
-          }
+            preorder_shipping: prodMeta?.preorder_shipping || null,
+          },
         });
       }
 
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .insert(orderItems);
-
+      const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
       if (itemsError) throw itemsError;
 
-      // Note: Stock reduction happens in mark_order_paid when payment is confirmed
-
-      // 3. Upsert Customer Record (for both guest and registered users)
       const fullName = `${shippingData.firstName} ${shippingData.lastName}`.trim();
       await supabase.rpc('upsert_customer_from_order', {
         p_email: shippingData.email,
@@ -243,59 +234,11 @@ export default function CheckoutPage() {
         p_first_name: shippingData.firstName,
         p_last_name: shippingData.lastName,
         p_user_id: user?.id || null,
-        p_address: shippingData
+        p_address: shippingData,
       });
 
-      // 4. Handle Payment Redirects or Completion
-      if (paymentMethod === 'moolre') {
-        try {
-          // Payment link reminder will be sent automatically after 15 mins if unpaid (via cron)
-
-          const paymentRes = await fetch('/api/payment/moolre', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              orderId: orderNumber,
-              amount: total,
-              customerEmail: shippingData.email
-            })
-          });
-
-          const paymentResult = await paymentRes.json();
-
-          if (!paymentResult.success) {
-            throw new Error(paymentResult.message || 'Payment initialization failed');
-          }
-
-          // Clear cart before redirecting
-          clearCart();
-
-          // Redirect to Moolre
-          window.location.href = paymentResult.url;
-          return;
-
-        } catch (paymentErr: any) {
-          console.error('Payment Error:', paymentErr);
-          alert('Failed to initialize payment: ' + paymentErr.message);
-          setIsLoading(false);
-          return; // Stop execution
-        }
-      }
-
-      // 5. Send Notifications (For COD or others)
-      fetch('/api/notifications', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'order_created',
-          payload: order
-        })
-      }).catch(err => console.error('Notification trigger error:', err));
-
-      // 6. Clear Cart & Redirect (For COD)
-      clearCart();
-      router.push(`/order-success?order=${orderNumber}`);
-
+      setPendingOrder({ orderNumber, total, currency: 'CAD' });
+      setCurrentStep(3);
     } catch (err: any) {
       console.error('Checkout error:', err);
       alert('Failed to place order: ' + err.message);
@@ -313,7 +256,7 @@ export default function CheckoutPage() {
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Your cart is empty</h1>
           <p className="text-gray-600 mb-8">Add some items to start the checkout process.</p>
-          <Link href="/shop" className="inline-block bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-800 transition-colors">
+          <Link href="/shop" className="inline-block bg-sienna-500 text-white px-8 py-3 rounded-lg font-semibold hover:bg-sienna-600 transition-colors">
             Return to Shop
           </Link>
         </div>
@@ -340,33 +283,33 @@ export default function CheckoutPage() {
               <button
                 onClick={() => !user && setCheckoutType('guest')}
                 className={`p-6 rounded-xl border-2 transition-all text-left cursor-pointer ${checkoutType === 'guest'
-                  ? 'border-blue-700 bg-blue-50'
+                  ? 'border-sienna-500 bg-cream-100'
                   : 'border-gray-200 hover:border-gray-300'
                   } ${user ? 'opacity-50 cursor-not-allowed' : ''}`}
                 disabled={!!user}
               >
                 <div className="flex items-center justify-between mb-3">
-                  <i className="ri-user-line text-3xl text-blue-700"></i>
-                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${checkoutType === 'guest' ? 'border-blue-700 bg-blue-700' : 'border-gray-300'
+                  <i className="ri-user-line text-3xl text-sienna-500"></i>
+                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${checkoutType === 'guest' ? 'border-sienna-500 bg-sienna-500' : 'border-gray-300'
                     }`}>
                     {checkoutType === 'guest' && <i className="ri-check-line text-white text-sm"></i>}
                   </div>
                 </div>
                 <h3 className="text-lg font-bold text-gray-900 mb-2">Guest Checkout</h3>
                 <p className="text-sm text-gray-600">Quick checkout without creating an account</p>
-                {user && <p className="text-xs text-blue-600 mt-2">You are logged in</p>}
+                {user && <p className="text-xs text-sienna-500 mt-2">You are logged in</p>}
               </button>
 
               <button
                 onClick={() => setCheckoutType('account')}
                 className={`p-6 rounded-xl border-2 transition-all text-left cursor-pointer ${checkoutType === 'account'
-                  ? 'border-blue-700 bg-blue-50'
+                  ? 'border-sienna-500 bg-cream-100'
                   : 'border-gray-200 hover:border-gray-300'
                   }`}
               >
                 <div className="flex items-center justify-between mb-3">
-                  <i className="ri-account-circle-line text-3xl text-blue-700"></i>
-                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${checkoutType === 'account' ? 'border-blue-700 bg-blue-700' : 'border-gray-300'
+                  <i className="ri-account-circle-line text-3xl text-sienna-500"></i>
+                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${checkoutType === 'account' ? 'border-sienna-500 bg-sienna-500' : 'border-gray-300'
                     }`}>
                     {checkoutType === 'account' && <i className="ri-check-line text-white text-sm"></i>}
                   </div>
@@ -399,7 +342,7 @@ export default function CheckoutPage() {
                           type="text"
                           value={shippingData.firstName}
                           onChange={(e) => setShippingData({ ...shippingData, firstName: e.target.value })}
-                          className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${errors.firstName ? 'border-red-500' : 'border-gray-300'
+                          className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-sienna-500 focus:border-sienna-500 ${errors.firstName ? 'border-red-500' : 'border-gray-300'
                             }`}
                           placeholder="John"
                         />
@@ -413,7 +356,7 @@ export default function CheckoutPage() {
                           type="text"
                           value={shippingData.lastName}
                           onChange={(e) => setShippingData({ ...shippingData, lastName: e.target.value })}
-                          className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${errors.lastName ? 'border-red-500' : 'border-gray-300'
+                          className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-sienna-500 focus:border-sienna-500 ${errors.lastName ? 'border-red-500' : 'border-gray-300'
                             }`}
                           placeholder="Doe"
                         />
@@ -430,7 +373,7 @@ export default function CheckoutPage() {
                         value={shippingData.email}
                         readOnly={!!user} // Make read-only if logged in (optional, but safer)
                         onChange={(e) => setShippingData({ ...shippingData, email: e.target.value })}
-                        className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${errors.email ? 'border-red-500' : 'border-gray-300'
+                        className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-sienna-500 focus:border-sienna-500 ${errors.email ? 'border-red-500' : 'border-gray-300'
                           } ${user ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                         placeholder="you@example.com"
                       />
@@ -445,7 +388,7 @@ export default function CheckoutPage() {
                         type="tel"
                         value={shippingData.phone}
                         onChange={(e) => setShippingData({ ...shippingData, phone: e.target.value })}
-                        className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${errors.phone ? 'border-red-500' : 'border-gray-300'
+                        className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-sienna-500 focus:border-sienna-500 ${errors.phone ? 'border-red-500' : 'border-gray-300'
                           }`}
                         placeholder="+233 XX XXX XXXX"
                       />
@@ -460,7 +403,7 @@ export default function CheckoutPage() {
                         type="text"
                         value={shippingData.address}
                         onChange={(e) => setShippingData({ ...shippingData, address: e.target.value })}
-                        className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${errors.address ? 'border-red-500' : 'border-gray-300'
+                        className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-sienna-500 focus:border-sienna-500 ${errors.address ? 'border-red-500' : 'border-gray-300'
                           }`}
                         placeholder="House number and street name"
                       />
@@ -470,34 +413,42 @@ export default function CheckoutPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-semibold text-gray-900 mb-2">
-                          City *
-                        </label>
-                        <input
-                          type="text"
-                          value={shippingData.city}
-                          onChange={(e) => setShippingData({ ...shippingData, city: e.target.value })}
-                          className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${errors.city ? 'border-red-500' : 'border-gray-300'
-                            }`}
-                          placeholder="Accra"
-                        />
-                        {errors.city && <p className="text-sm text-red-600 mt-1">{errors.city}</p>}
-                      </div>
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-900 mb-2">
                           Region *
                         </label>
                         <select
                           value={shippingData.region}
-                          onChange={(e) => setShippingData({ ...shippingData, region: e.target.value })}
-                          className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white ${errors.region ? 'border-red-500' : 'border-gray-300'
+                          onChange={(e) => setShippingData({ ...shippingData, region: e.target.value, city: '' })}
+                          className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-sienna-500 focus:border-sienna-500 bg-white ${errors.region ? 'border-red-500' : 'border-gray-300'
                             }`}
                         >
                           <option value="">Select Region</option>
-                          {ghanaRegions.map((region) => (
+                          {canadianRegions.map((region) => (
                             <option key={region} value={region}>{region}</option>
                           ))}
                         </select>
                         {errors.region && <p className="text-sm text-red-600 mt-1">{errors.region}</p>}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-900 mb-2">
+                          City *
+                        </label>
+                        <input
+                          type="text"
+                          list="fitaura-city-suggestions"
+                          value={shippingData.city}
+                          onChange={(e) => setShippingData({ ...shippingData, city: e.target.value })}
+                          disabled={!shippingData.region}
+                          className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-sienna-500 focus:border-sienna-500 disabled:bg-gray-100 disabled:cursor-not-allowed ${errors.city ? 'border-red-500' : 'border-gray-300'
+                            }`}
+                          placeholder={shippingData.region ? 'Start typing your city…' : 'Select a region first'}
+                          autoComplete="address-level2"
+                        />
+                        <datalist id="fitaura-city-suggestions">
+                          {citySuggestions.map((city) => (
+                            <option key={city} value={city} />
+                          ))}
+                        </datalist>
+                        {errors.city && <p className="text-sm text-red-600 mt-1">{errors.city}</p>}
                       </div>
                     </div>
 
@@ -507,7 +458,7 @@ export default function CheckoutPage() {
                           type="checkbox"
                           checked={saveAddress}
                           onChange={(e) => setSaveAddress(e.target.checked)}
-                          className="w-5 h-5 text-blue-700 rounded border-gray-300 focus:ring-blue-500"
+                          className="w-5 h-5 text-sienna-500 rounded border-gray-300 focus:ring-sienna-500"
                         />
                         <span className="text-sm text-gray-700">Save this address for future orders</span>
                       </label>
@@ -516,7 +467,7 @@ export default function CheckoutPage() {
 
                   <button
                     onClick={handleContinueToDelivery}
-                    className="w-full mt-6 bg-blue-700 hover:bg-blue-800 text-white py-4 rounded-lg font-semibold transition-colors whitespace-nowrap cursor-pointer"
+                    className="w-full mt-6 bg-sienna-500 hover:bg-sienna-600 text-white py-4 rounded-lg font-semibold transition-colors whitespace-nowrap cursor-pointer"
                   >
                     Continue to Delivery
                   </button>
@@ -531,7 +482,7 @@ export default function CheckoutPage() {
                 <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
                   <h2 className="text-xl font-bold text-gray-900 mb-6">Delivery Method</h2>
                   <div className="space-y-4">
-                    <label className={`flex items-center justify-between p-4 border-2 rounded-lg cursor-pointer transition-colors ${deliveryMethod === 'pickup' ? 'border-blue-700 bg-blue-50' : 'border-gray-300 hover:border-gray-400'
+                    <label className={`flex items-center justify-between p-4 border-2 rounded-lg cursor-pointer transition-colors ${deliveryMethod === 'pickup' ? 'border-sienna-500 bg-cream-100' : 'border-gray-300 hover:border-gray-400'
                       }`}>
                       <div className="flex items-center space-x-4">
                         <input
@@ -540,17 +491,17 @@ export default function CheckoutPage() {
                           value="pickup"
                           checked={deliveryMethod === 'pickup'}
                           onChange={(e) => setDeliveryMethod(e.target.value)}
-                          className="w-5 h-5 text-blue-700"
+                          className="w-5 h-5 text-sienna-500"
                         />
                         <div>
                           <p className="font-semibold text-gray-900">Store Pickup</p>
                           <p className="text-sm text-gray-600">Pick up from our store — Ready in 24 hours</p>
                         </div>
                       </div>
-                      <p className="font-bold text-blue-700">FREE</p>
+                      <p className="font-bold text-sienna-500">FREE</p>
                     </label>
 
-                    <label className={`flex items-center justify-between p-4 border-2 rounded-lg cursor-pointer transition-colors ${deliveryMethod === 'doorstep' ? 'border-blue-700 bg-blue-50' : 'border-gray-300 hover:border-gray-400'
+                    <label className={`flex items-center justify-between p-4 border-2 rounded-lg cursor-pointer transition-colors ${deliveryMethod === 'doorstep' ? 'border-sienna-500 bg-cream-100' : 'border-gray-300 hover:border-gray-400'
                       }`}>
                       <div className="flex items-center space-x-4">
                         <input
@@ -559,7 +510,7 @@ export default function CheckoutPage() {
                           value="doorstep"
                           checked={deliveryMethod === 'doorstep'}
                           onChange={(e) => setDeliveryMethod(e.target.value)}
-                          className="w-5 h-5 text-blue-700"
+                          className="w-5 h-5 text-sienna-500"
                         />
                         <div>
                           <p className="font-semibold text-gray-900">Doorstep Delivery</p>
@@ -570,27 +521,27 @@ export default function CheckoutPage() {
                     </label>
 
                     {/* Comprehensive delivery options - to be re-enabled later
-                    <label className={`flex items-center justify-between p-4 border-2 rounded-lg cursor-pointer transition-colors ${deliveryMethod === 'accra' ? 'border-blue-700 bg-blue-50' : 'border-gray-300 hover:border-gray-400'
+                    <label className={`flex items-center justify-between p-4 border-2 rounded-lg cursor-pointer transition-colors ${deliveryMethod === 'accra' ? 'border-sienna-500 bg-cream-100' : 'border-gray-300 hover:border-gray-400'
                       }`}>
                       <div className="flex items-center space-x-4">
-                        <input type="radio" name="delivery" value="accra" checked={deliveryMethod === 'accra'} onChange={(e) => setDeliveryMethod(e.target.value)} className="w-5 h-5 text-blue-700" />
+                        <input type="radio" name="delivery" value="local" checked={deliveryMethod === 'local'} onChange={(e) => setDeliveryMethod(e.target.value)} className="w-5 h-5 text-sienna-500" />
                         <div>
-                          <p className="font-semibold text-gray-900">Accra Delivery</p>
-                          <p className="text-sm text-gray-600">Delivery within Accra</p>
+                          <p className="font-semibold text-gray-900">Calgary Local Delivery</p>
+                          <p className="text-sm text-gray-600">Delivery within the Calgary metro area</p>
                         </div>
                       </div>
-                      <p className="font-bold text-gray-900">GH₵ 40.00</p>
+                      <p className="font-bold text-gray-900">$ 40.00</p>
                     </label>
-                    <label className={`flex items-center justify-between p-4 border-2 rounded-lg cursor-pointer transition-colors ${deliveryMethod === 'outside-accra' ? 'border-blue-700 bg-blue-50' : 'border-gray-300 hover:border-gray-400'
+                    <label className={`flex items-center justify-between p-4 border-2 rounded-lg cursor-pointer transition-colors ${deliveryMethod === 'outside-accra' ? 'border-sienna-500 bg-cream-100' : 'border-gray-300 hover:border-gray-400'
                       }`}>
                       <div className="flex items-center space-x-4">
-                        <input type="radio" name="delivery" value="outside-accra" checked={deliveryMethod === 'outside-accra'} onChange={(e) => setDeliveryMethod(e.target.value)} className="w-5 h-5 text-blue-700" />
+                        <input type="radio" name="delivery" value="canada-post" checked={deliveryMethod === 'canada-post'} onChange={(e) => setDeliveryMethod(e.target.value)} className="w-5 h-5 text-sienna-500" />
                         <div>
-                          <p className="font-semibold text-gray-900">Outside Accra Delivery</p>
-                          <p className="text-sm text-gray-600">Delivery to bus stations (VIP, OA, STC, etc.)</p>
+                          <p className="font-semibold text-gray-900">Canada-Wide Shipping</p>
+                          <p className="text-sm text-gray-600">Tracked delivery anywhere in Canada</p>
                         </div>
                       </div>
-                      <p className="font-bold text-gray-900">GH₵ 30.00</p>
+                      <p className="font-bold text-gray-900">$ 30.00</p>
                     </label>
                     */}
                   </div>
@@ -606,7 +557,7 @@ export default function CheckoutPage() {
                     <button
                       onClick={handleContinueToPayment}
                       disabled={isLoading}
-                      className="flex-1 bg-blue-700 hover:bg-blue-800 text-white py-4 rounded-lg font-semibold transition-colors whitespace-nowrap cursor-pointer disabled:opacity-70 flex items-center justify-center"
+                      className="flex-1 bg-sienna-500 hover:bg-sienna-600 text-white py-4 rounded-lg font-semibold transition-colors whitespace-nowrap cursor-pointer disabled:opacity-70 flex items-center justify-center"
                     >
                       {isLoading ? (
                         <>
@@ -614,10 +565,10 @@ export default function CheckoutPage() {
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                           </svg>
-                          Processing...
+                          Preparing payment...
                         </>
                       ) : (
-                        'Pay with Mobile Money'
+                        'Continue to Payment'
                       )}
                     </button>
                   </div>
@@ -627,7 +578,44 @@ export default function CheckoutPage() {
               </>
             )}
 
-            {/* Step 3 removed - payment now initiates directly from step 2 */}
+            {currentStep === 3 && (
+              <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900">Secure Payment</h2>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Order <span className="font-mono">{pendingOrder?.orderNumber || '—'}</span>
+                    </p>
+                  </div>
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold tracking-wider uppercase text-gray-500">
+                    <i className="ri-lock-line" aria-hidden></i>
+                    Encrypted
+                  </span>
+                </div>
+
+                {pendingOrder ? (
+                  <StripePaymentForm
+                    orderNumber={pendingOrder.orderNumber}
+                    total={pendingOrder.total}
+                    currency={pendingOrder.currency}
+                    returnUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/order-success?order=${pendingOrder.orderNumber}&payment_success=true`}
+                  />
+                ) : (
+                  <div className="text-center text-gray-500 py-10">
+                    <i className="ri-error-warning-line text-3xl mb-2 block"></i>
+                    No pending order. Please return to the previous step.
+                  </div>
+                )}
+
+                <button
+                  onClick={() => setCurrentStep(2)}
+                  className="mt-6 inline-flex items-center text-sm font-medium text-gray-600 hover:text-gray-900"
+                >
+                  <i className="ri-arrow-left-line mr-1.5"></i>
+                  Back to Delivery
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="lg:col-span-1">

@@ -1,214 +1,182 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import Image from 'next/image';
 import { useCMS } from '@/context/CMSContext';
-import PageHero from '@/components/PageHero';
 import { usePageTitle } from '@/hooks/usePageTitle';
+
+interface BrandStoryView {
+  eyebrow: string;
+  titleTop: string;
+  titleBottom: string;
+  content: string;
+  imageUrl: string;
+  imageAlt: string;
+  buttonText: string;
+  buttonUrl: string;
+  valueProps: Array<{ icon: string; title: string; body: string }>;
+}
+
+const BRAND_STORY_FALLBACK: BrandStoryView = {
+  eyebrow: 'Designed in Calgary',
+  titleTop: 'BUILT FOR',
+  titleBottom: 'EVERY AURA.',
+  content:
+    'FITAURA is a modern lifestyle clothing brand offering gymwear, athleisure and fashion-forward apparel — designed to empower confidence and comfort. Our roots are in performance, but our vision is bigger: a full wardrobe for every part of your day.',
+  imageUrl: '/brand/about-hero.jpg',
+  imageAlt: 'FITAURA brand portrait — built for every aura',
+  buttonText: 'Shop The Collection',
+  buttonUrl: '/shop',
+  valueProps: [
+    { icon: 'ri-pulse-line', title: 'Built To Move', body: 'Performance gymwear engineered for studio days and beyond.' },
+    { icon: 'ri-sparkling-2-line', title: 'Fashion-Forward', body: 'Athleisure that wears just as well with denim and boots.' },
+    { icon: 'ri-heart-3-line', title: 'Confidence In Comfort', body: 'Silhouettes designed to celebrate strength and ease.' },
+  ],
+};
 
 export default function AboutPage() {
   usePageTitle('Our Story');
-  const { getSetting } = useCMS();
-  const [activeTab, setActiveTab] = useState('story');
+  const { getSetting, getContent } = useCMS();
+  const siteName = getSetting('site_name') || 'FITAURA';
 
-  const siteName = getSetting('site_name') || 'TIWAA PERFUME STYLE HOUSE';
+  // Brand story comes from the cms_content row (section=homepage, block_key=brand_story)
+  // managed in /admin/content. Falls back to the hardcoded copy when the row hasn't been
+  // seeded or Supabase is unreachable.
+  const storyCms = getContent('homepage', 'brand_story');
+  const storyMeta = (storyCms?.metadata ?? {}) as Record<string, unknown>;
+  const rawValueProps = Array.isArray(storyMeta.value_props) ? (storyMeta.value_props as unknown[]) : [];
+  const cmsValueProps = rawValueProps
+    .map((p) => {
+      const v = (p ?? {}) as Record<string, unknown>;
+      return {
+        icon: String(v.icon ?? ''),
+        title: String(v.title ?? ''),
+        body: String(v.body ?? ''),
+      };
+    })
+    .filter((v) => v.title || v.body);
 
-  const values = [
-    {
-      icon: 'ri-verified-badge-line',
-      title: 'Verified Quality',
-      description: 'Every perfume is personally inspected before it reaches you. We focus on authentic fragrances and quality you can trust.'
-    },
-    {
-      icon: 'ri-money-dollar-circle-line',
-      title: 'Unbeatable Prices',
-      description: 'Competitive wholesale and retail prices. We pass the savings to resellers and individual customers.'
-    },
-    {
-      icon: 'ri-global-line',
-      title: 'Curated Fragrances',
-      description: 'A handpicked range of perfumes for every taste. Genuine products at great prices.'
-    },
-    {
-      icon: 'ri-truck-line',
-      title: 'Nationwide Delivery',
-      description: 'Fast and reliable delivery across Ghana. Based in Satellite, Accra, we ship with care and speed.'
-    }
-  ];
+  const BRAND_STORY: BrandStoryView = storyCms
+    ? {
+        eyebrow: String(storyMeta.eyebrow ?? BRAND_STORY_FALLBACK.eyebrow),
+        titleTop: storyCms.title || BRAND_STORY_FALLBACK.titleTop,
+        titleBottom: storyCms.subtitle || BRAND_STORY_FALLBACK.titleBottom,
+        content: storyCms.content || BRAND_STORY_FALLBACK.content,
+        imageUrl: storyCms.image_url || BRAND_STORY_FALLBACK.imageUrl,
+        imageAlt: String(storyMeta.image_alt ?? BRAND_STORY_FALLBACK.imageAlt),
+        buttonText: storyCms.button_text || BRAND_STORY_FALLBACK.buttonText,
+        buttonUrl: storyCms.button_url || BRAND_STORY_FALLBACK.buttonUrl,
+        valueProps: cmsValueProps.length ? cmsValueProps : BRAND_STORY_FALLBACK.valueProps,
+      }
+    : BRAND_STORY_FALLBACK;
 
   return (
-    <div className="min-h-screen bg-white">
-      <PageHero
-        title="More Than Just A Brand"
-        subtitle="From Satellite, Accra — perfumes wholesale and retail."
-        backgroundImage="/Whisk_743db4f33bd7ec08b0f46aec28e929cfdr.jpeg"
-      />
+    <div className="bg-cream-50 text-ink-700">
 
-      {/* Who We Are - Hero section */}
-      <section className="py-20 bg-white overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <h2 className="text-3xl md:text-4xl font-serif text-gray-900 mb-6">Who We Are</h2>
-              <div className="space-y-4 text-lg text-gray-600 leading-relaxed">
-                <p>
-                  <strong>TIWAA PERFUME STYLE HOUSE</strong> is your premier destination for perfumes, both wholesale and retail. Based in Satellite, Accra, we offer a curated range of fragrances at competitive prices for resellers and individual customers.
-                </p>
-                <p>
-                  We focus on quality and value. Whether you're stocking up for your business or shopping for yourself, we handpick our perfumes to deliver genuine products and great prices.
-                </p>
-                <div className="pt-4">
-                  <Link
-                    href="#our-story"
-                    className="inline-flex items-center text-blue-800 font-medium hover:text-blue-900 transition-colors group"
-                  >
-                    <span className="border-b border-transparent group-hover:border-blue-900 transition-colors">Read Our Full Story</span>
-                    <i className="ri-arrow-right-line ml-2 transition-transform group-hover:translate-x-1"></i>
-                  </Link>
-                </div>
+      {/* ─── Brand story (now opens the About page) ─── */}
+      {/* `bg-white` separates this opening band from the header, which sits
+          on the page's cream-50 base. */}
+      <section className="bg-white py-16 lg:py-24 border-b border-cream-200">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10">
+
+          {/* Brand story — two-column block (copy + editorial image). */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
+
+            {/* Left — copy */}
+            <div className="lg:col-span-5">
+              <div className="flex items-center gap-3 mb-6">
+                <span className="eyebrow">{BRAND_STORY.eyebrow}</span>
+                <span className="h-px w-12 bg-sienna-500/40" />
               </div>
+              <h2 className="font-display text-[42px] sm:text-[54px] lg:text-[64px] leading-[0.92] text-ink-900 tracking-tight">
+                <span className="block">{BRAND_STORY.titleTop}</span>
+                <span className="block text-sienna-500">{BRAND_STORY.titleBottom}</span>
+              </h2>
+              <p className="mt-7 text-ink-500 leading-relaxed max-w-md">{BRAND_STORY.content}</p>
+              {/*
+                CTA is intentionally hardcoded here. The CMS row for
+                `brand_story.button_*` still ships "Discover Our Story →
+                /about" from when this content lived on the homepage —
+                that doesn't make sense on the About page itself, so we
+                always send visitors to the shop instead.
+              */}
+              <Link
+                href="/shop"
+                className="mt-9 inline-flex items-center bg-ink-900 hover:bg-sienna-500 text-cream-50 px-7 py-3.5 text-[11px] font-semibold tracking-[0.24em] uppercase transition-colors duration-300"
+              >
+                Shop The Collection
+              </Link>
             </div>
-            <div className="relative">
-              <div className="aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl relative">
-                <img
-                  src="/Whisk_743db4f33bd7ec08b0f46aec28e929cfdr.jpeg"
-                  alt="TIWAA PERFUME STYLE HOUSE — Premium perfumes"
-                  className="w-full h-full object-cover"
+
+            {/* Right — editorial image */}
+            <div className="lg:col-span-7">
+              <div className="relative aspect-[4/5] sm:aspect-[5/4] lg:aspect-[5/4] w-full overflow-hidden bg-cream-200">
+                <Image
+                  src={BRAND_STORY.imageUrl}
+                  alt={BRAND_STORY.imageAlt}
+                  fill
+                  sizes="(max-width: 1024px) 100vw, 58vw"
+                  className="object-cover"
                 />
               </div>
-              <div className="absolute -bottom-6 -left-6 bg-white p-6 rounded-xl shadow-xl max-w-xs border border-gray-100">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-700">
-                    <i className="ri-medal-line text-xl"></i>
-                  </div>
-                  <div>
-                    <p className="font-bold text-gray-900">Premium Quality</p>
-                    <p className="text-sm text-gray-500">Authentic Fragrances</p>
-                  </div>
-                </div>
-              </div>
             </div>
+
           </div>
+
+          {/* Value props — sits beneath the brand-story block as a full-
+              width horizontal row, matching the homepage ValuePropsStrip
+              card language (white surface, rounded-xl, sienna chip,
+              display title, gray body). */}
+          <ul className="mt-12 lg:mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 lg:gap-5">
+            {BRAND_STORY.valueProps.map((v) => (
+              <li
+                key={v.title}
+                className="group relative overflow-hidden rounded-xl bg-white border border-cream-200 p-5 lg:p-6 transition-all duration-300 hover:border-sienna-200 hover:shadow-[0_14px_38px_-22px_rgba(209,79,43,0.35)] hover:-translate-y-0.5"
+              >
+                {/* Soft sienna wash fades in on hover — mirrors the
+                    homepage trust cards. */}
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-sienna-50/60 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                />
+
+                <div className="relative">
+                  <span className="inline-flex w-10 h-10 items-center justify-center bg-sienna-500 text-cream-50 rounded-lg mb-4 transition-transform duration-300 group-hover:scale-[1.06]">
+                    <i className={`${v.icon} text-base`} aria-hidden></i>
+                  </span>
+                  <h4 className="font-display text-[15px] lg:text-base text-ink-900 mb-2 tracking-tight">
+                    {v.title}
+                  </h4>
+                  <p className="text-ink-500 leading-relaxed text-[13px]">
+                    {v.body}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
+
         </div>
       </section>
 
-      <div id="our-story" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <div className="flex border-b border-gray-200 mb-12 justify-center">
-          <button
-            onClick={() => setActiveTab('story')}
-            className={`px-4 py-2 sm:px-8 sm:py-4 font-medium transition-colors text-lg cursor-pointer ${activeTab === 'story'
-              ? 'text-blue-700 border-b-4 border-blue-700 font-bold'
-              : 'text-gray-500 hover:text-gray-700'
-              }`}
-          >
-            Our Story
-          </button>
-          <button
-            onClick={() => setActiveTab('mission')}
-            className={`px-4 py-2 sm:px-8 sm:py-4 font-medium transition-colors text-lg cursor-pointer ${activeTab === 'mission'
-              ? 'text-blue-700 border-b-4 border-blue-700 font-bold'
-              : 'text-gray-500 hover:text-gray-700'
-              }`}
-          >
-            Our Mission
-          </button>
-        </div>
-
-        {activeTab === 'story' && (
-          <div className="grid md:grid-cols-2 gap-16 items-center animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div>
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-6">How It All Started</h2>
-              <div className="space-y-6 text-lg text-gray-600 leading-relaxed">
-                <p>
-                  <strong>TIWAA PERFUME STYLE HOUSE</strong> sells perfumes — wholesale and retail. Based in Satellite, Accra, we offer a curated range of fragrances at competitive prices for both resellers and individual customers.
-                </p>
-                <p>
-                  We focus on quality and value. Whether you're stocking up for your business or shopping for yourself, we handpick our perfumes to deliver genuine products and great prices.
-                </p>
-                <p>
-                  Call us on <strong>054 501 0949</strong> or WhatsApp <strong>055 416 9992</strong>. We're here to help with orders and enquiries.
-                </p>
-              </div>
-            </div>
-            <div className="relative">
-              <div className="aspect-[3/4] rounded-2xl overflow-hidden shadow-2xl bg-gray-100 relative flex items-center justify-center">
-                <img
-                  src="/tiwa logo.png"
-                  alt="TIWAA PERFUME STYLE HOUSE"
-                  className="w-2/3 h-auto object-contain opacity-80"
-                />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-8">
-                  <p className="text-white font-bold text-xl">TIWAA PERFUME STYLE HOUSE</p>
-                  <p className="text-blue-200">Perfumes · Wholesale & Retail · Satellite, Accra</p>
-                </div>
-              </div>
-              {/* Decorative Element */}
-              <div className="absolute -z-10 top-10 -right-10 w-full h-full border-4 border-blue-100 rounded-2xl hidden md:block"></div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'mission' && (
-          <div className="grid md:grid-cols-2 gap-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="bg-blue-50 p-10 rounded-3xl border border-blue-100">
-              <div className="w-16 h-16 bg-blue-700 rounded-2xl flex items-center justify-center mb-8 shadow-lg">
-                <i className="ri-store-2-line text-3xl text-white"></i>
-              </div>
-              <h3 className="text-3xl font-bold text-gray-900 mb-4">Everything in One Place</h3>
-              <p className="text-gray-600 text-lg leading-relaxed">
-                We stock a wide range of perfumes and fragrances. Our catalogue is constantly updated with new arrivals for both wholesale and retail customers.
-              </p>
-            </div>
-            <div className="bg-amber-50 p-10 rounded-3xl border border-amber-100">
-              <div className="w-16 h-16 bg-amber-600 rounded-2xl flex items-center justify-center mb-8 shadow-lg">
-                <i className="ri-hand-heart-line text-3xl text-white"></i>
-              </div>
-              <h3 className="text-3xl font-bold text-gray-900 mb-4">Empowering Resellers</h3>
-              <p className="text-gray-600 text-lg leading-relaxed">
-                We support small businesses and resellers with competitive bulk pricing. Many of our products are available at wholesale rates, helping entrepreneurs across Ghana grow their own ventures.
-              </p>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Values Section */}
-      <div className="bg-gray-50 py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Why Shop With Us?</h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">Trusted by hundreds of customers and resellers across Ghana.</p>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {values.map((value, index) => (
-              <div key={index} className="bg-white p-8 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-                <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center mb-6">
-                  <i className={`${value.icon} text-2xl text-blue-700`}></i>
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-3">{value.title}</h3>
-                <p className="text-gray-600 leading-relaxed">{value.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* CTA */}
-      <div className="bg-blue-900 py-24">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
-          <h2 className="text-4xl md:text-5xl font-bold mb-8">Ready to shop smarter?</h2>
-          <p className="text-xl text-blue-100 mb-10 leading-relaxed max-w-2xl mx-auto">
-            Browse our perfumes — wholesale and retail. Call 054 501 0949 or WhatsApp 055 416 9992.
+      {/* ─── CTA ─── */}
+      <section className="bg-ink-900 text-cream-50 py-14 lg:py-18">
+        <div className="max-w-[900px] mx-auto px-4 sm:px-6 lg:px-10 text-center">
+          <span className="eyebrow text-sienna-500 mb-4 block">Shop The Collection</span>
+          <h2 className="font-display text-[28px] sm:text-[38px] lg:text-[48px] leading-[1] tracking-tight mb-5">
+            <span className="block">CONFIDENCE</span>
+            <span className="block text-sienna-500">IS A WARDROBE.</span>
+          </h2>
+          <p className="text-cream-100/70 leading-relaxed text-[14.5px] lg:text-[15px] max-w-lg mx-auto mb-7">
+            New arrivals every season. Lounge sets that live in your suitcase. Accessories that finish every look. Built for every part of your day.
           </p>
           <Link
             href="/shop"
-            className="inline-flex items-center gap-3 bg-white text-blue-900 px-10 py-5 rounded-full font-bold text-lg hover:bg-blue-50 transition-colors shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all"
+            className="inline-flex items-center justify-center bg-sienna-500 hover:bg-sienna-600 text-cream-50 px-7 py-3.5 text-[11px] font-semibold tracking-[0.24em] uppercase transition-colors duration-300"
           >
             Start Shopping
-            <i className="ri-arrow-right-line"></i>
           </Link>
         </div>
-      </div>
+      </section>
     </div>
   );
 }

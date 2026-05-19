@@ -82,7 +82,7 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
                         key={index}
                         onClick={() => setSelectedImage(index)}
                         className={`relative aspect-square bg-gray-100 rounded-lg overflow-hidden border-2 transition-colors ${
-                          selectedImage === index ? 'border-blue-700' : 'border-transparent hover:border-gray-300'
+                          selectedImage === index ? 'border-sienna-500' : 'border-transparent hover:border-gray-300'
                         }`}
                       >
                         <Image src={image} alt="" fill className="object-cover object-top" sizes="12vw" quality={50} />
@@ -96,7 +96,7 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
                 <div className="mb-2">
                   <Link 
                     href={`/categories?category=${product.category}`}
-                    className="text-sm text-blue-700 hover:text-blue-800 font-medium whitespace-nowrap"
+                    className="text-sm text-sienna-500 hover:text-sienna-600 font-medium whitespace-nowrap"
                   >
                     {product.category}
                   </Link>
@@ -121,10 +121,10 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
                 </div>
 
                 <div className="flex items-baseline space-x-3 mb-4">
-                  <span className="text-3xl font-bold text-gray-900">GH₵{product.price.toFixed(2)}</span>
+                  <span className="text-3xl font-bold text-gray-900">${product.price.toFixed(2)}</span>
                   {product.originalPrice && (
                     <>
-                      <span className="text-lg text-gray-400 line-through">GH₵{product.originalPrice.toFixed(2)}</span>
+                      <span className="text-lg text-gray-400 line-through">${product.originalPrice.toFixed(2)}</span>
                       <span className="px-2 py-1 bg-red-100 text-red-700 text-sm font-semibold rounded whitespace-nowrap">
                         Save {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}%
                       </span>
@@ -146,7 +146,7 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
                           onClick={() => setSelectedColor(color)}
                           className={`px-4 py-2 border-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
                             selectedColor === color
-                              ? 'border-blue-700 bg-blue-50 text-blue-700'
+                              ? 'border-sienna-500 bg-cream-100 text-sienna-500'
                               : 'border-gray-300 hover:border-gray-400 text-gray-700'
                           }`}
                         >
@@ -169,7 +169,7 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
                           onClick={() => setSelectedSize(size)}
                           className={`px-4 py-2 border-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
                             selectedSize === size
-                              ? 'border-blue-700 bg-blue-50 text-blue-700'
+                              ? 'border-sienna-500 bg-cream-100 text-sienna-500'
                               : 'border-gray-300 hover:border-gray-400 text-gray-700'
                           }`}
                         >
@@ -217,7 +217,7 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
                       addedToCart
                         ? 'bg-green-600 text-white'
                         : product.inStock
-                        ? 'bg-blue-700 hover:bg-blue-800 text-white'
+                        ? 'bg-sienna-500 hover:bg-sienna-600 text-white'
                         : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     }`}
                   >

@@ -1,10 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-// Server-side Supabase client (no auth needed for public data)
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 // Simple in-memory cache
 let cache: { data: any; timestamp: number } | null = null;
@@ -15,6 +10,15 @@ export async function GET(request: Request) {
     const featured = searchParams.get('featured') === 'true';
     const limit = parseInt(searchParams.get('limit') || '50');
     const category = searchParams.get('category');
+
+    if (!isSupabaseConfigured) {
+        return NextResponse.json([], {
+            headers: {
+                'Cache-Control': 'public, s-maxage=60',
+                'X-Cache': 'BYPASS-NO-BACKEND',
+            },
+        });
+    }
 
     // Build a cache key from params
     const cacheKey = `${featured}-${limit}-${category || 'all'}`;

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import LazyImage from './LazyImage';
 import { useCart } from '@/context/CartContext';
+import { useCMS } from '@/context/CMSContext';
 
 // Map common color names to hex values for swatches
 const COLOR_MAP: Record<string, string> = {
@@ -21,12 +22,12 @@ const COLOR_MAP: Record<string, string> = {
   forest: '#228B22', cobalt: '#0047AB', emerald: '#50C878', scarlet: '#FF2400',
   aqua: '#00FFFF', turquoise: '#40E0D0', indigo: '#4B0082', crimson: '#DC143C',
   magenta: '#FF00FF', cyan: '#00FFFF', chocolate: '#7B3F00', coffee: '#6F4E37',
+  sienna: '#D14F2B',
 };
 
 export function getColorHex(colorName: string): string | null {
   const lower = colorName.toLowerCase().trim();
   if (COLOR_MAP[lower]) return COLOR_MAP[lower];
-  // Try partial match (e.g. "Light Blue" -> "blue")
   for (const [key, val] of Object.entries(COLOR_MAP)) {
     if (lower.includes(key)) return val;
   }
@@ -63,58 +64,88 @@ export default function ProductCard({
   price,
   originalPrice,
   image,
-  rating = 5,
-  reviewCount = 0,
   badge,
   inStock = true,
   maxStock = 50,
   moq = 1,
   hasVariants = false,
   minVariantPrice,
-  colorVariants = []
+  colorVariants = [],
 }: ProductCardProps) {
   const { addToCart } = useCart();
+  const { getSetting } = useCMS();
   const [activeColor, setActiveColor] = useState<string | null>(null);
+  const [wishlisted, setWishlisted] = useState(false);
+
   const displayPrice = hasVariants && minVariantPrice ? minVariantPrice : price;
   const discount = originalPrice ? Math.round((1 - displayPrice / originalPrice) * 100) : 0;
   const MAX_SWATCHES = 5;
+  const symbol = getSetting('currency_symbol') || '$';
+  const formatPrice = (val: number) => `${symbol}${val.toFixed(2)}`;
 
-  const formatPrice = (val: number) => `GH\u20B5${val.toFixed(2)}`;
+  const onWishlistClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setWishlisted((w) => !w);
+    try {
+      const list = JSON.parse(localStorage.getItem('wishlist') || '[]') as string[];
+      const idx = list.indexOf(id);
+      if (idx === -1) list.push(id); else list.splice(idx, 1);
+      localStorage.setItem('wishlist', JSON.stringify(list));
+      window.dispatchEvent(new Event('wishlistUpdated'));
+    } catch { /* ignore */ }
+  };
 
   return (
-    <div className="group bg-transparent rounded-lg h-full flex flex-col hover-lift">
-      <Link href={`/product/${slug}`} className="relative block aspect-[3/4] overflow-hidden rounded-xl bg-gray-100 mb-4 shadow-sm group-hover:shadow-xl transition-all duration-300">
+    <article className="group flex flex-col h-full">
+      <Link
+        href={`/product/${slug}`}
+        className="relative block aspect-[4/5] overflow-hidden bg-cream-100"
+      >
         <LazyImage
           src={image}
           alt={name}
-          className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-700"
+          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out"
         />
 
-        <div className="absolute top-3 left-3 flex flex-col gap-2">
+        {/* Top-left badges */}
+        <div className="absolute top-2 left-2 sm:top-3 sm:left-3 flex flex-col gap-1 sm:gap-1.5">
           {badge && (
-            <span className="bg-white/90 backdrop-blur text-gray-900 border border-gray-100 text-[10px] uppercase tracking-wider font-bold px-3 py-1.5 rounded-md shadow-sm">
+            <span className="bg-ink-900 text-cream-50 text-[8px] sm:text-[9px] tracking-[0.18em] sm:tracking-[0.2em] uppercase font-semibold px-2 py-0.5 sm:px-2.5 sm:py-1">
               {badge}
             </span>
           )}
           {discount > 0 && (
-            <span className="bg-red-50 text-red-700 border border-red-100 text-[10px] uppercase tracking-wider font-bold px-3 py-1.5 rounded-md shadow-sm">
+            <span className="bg-sienna-500 text-cream-50 text-[8px] sm:text-[9px] tracking-[0.18em] sm:tracking-[0.2em] uppercase font-semibold px-2 py-0.5 sm:px-2.5 sm:py-1">
               -{discount}%
             </span>
           )}
         </div>
 
+        {/* Top-right: wishlist */}
+        <button
+          type="button"
+          onClick={onWishlistClick}
+          aria-label={wishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
+          className="absolute top-2 right-2 sm:top-3 sm:right-3 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-cream-50/95 hover:bg-cream-50 text-ink-700 hover:text-sienna-500 flex items-center justify-center transition-colors shadow-soft"
+        >
+          <i className={`${wishlisted ? 'ri-heart-fill text-sienna-500' : 'ri-heart-line'} text-xs sm:text-sm`}></i>
+        </button>
+
+        {/* Out of stock state */}
         {!inStock && (
-          <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center">
-            <span className="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium">Out of Stock</span>
+          <div className="absolute inset-0 bg-cream-50/70 backdrop-blur-[1.5px] flex items-center justify-center">
+            <span className="bg-ink-900 text-cream-50 px-3 py-1.5 sm:px-4 sm:py-2 text-[9px] sm:text-[10px] tracking-[0.18em] sm:tracking-[0.2em] uppercase font-semibold">
+              Sold Out
+            </span>
           </div>
         )}
 
+        {/* Hover quick add (desktop only) */}
         {inStock && (
-          <div className="absolute bottom-0 left-0 right-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300 hidden lg:block">
+          <div className="hidden lg:block absolute bottom-0 left-0 right-0 p-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out">
             {hasVariants ? (
-              <span className="w-full bg-white text-gray-900 hover:bg-gray-900 hover:text-white py-3 rounded-lg font-medium shadow-lg transition-colors flex items-center justify-center space-x-2 text-sm">
-                <i className="ri-list-check"></i>
-                <span>Select Options</span>
+              <span className="block w-full text-center bg-cream-50 hover:bg-ink-900 hover:text-cream-50 text-ink-900 py-3 text-[11px] tracking-[0.22em] uppercase font-semibold transition-colors">
+                Select Options
               </span>
             ) : (
               <button
@@ -122,25 +153,33 @@ export default function ProductCard({
                   e.preventDefault();
                   addToCart({ id, name, price, image, quantity: moq, slug, maxStock, moq });
                 }}
-                className="w-full bg-white text-gray-900 hover:bg-gray-900 hover:text-white py-3 rounded-lg font-medium shadow-lg transition-colors flex items-center justify-center space-x-2 text-sm"
+                className="w-full bg-cream-50 hover:bg-ink-900 hover:text-cream-50 text-ink-900 py-3 text-[11px] tracking-[0.22em] uppercase font-semibold transition-colors"
               >
-                <i className="ri-shopping-cart-2-line"></i>
-                <span>{moq > 1 ? `Add ${moq} to Cart` : 'Quick Add'}</span>
+                {moq > 1 ? `Add ${moq} to Bag` : 'Quick Add'}
               </button>
             )}
           </div>
         )}
       </Link>
 
-      <div className="flex flex-col flex-grow">
-        <Link href={`/product/${slug}`}>
-          <h3 className="font-serif text-lg leading-tight text-gray-900 mb-1 group-hover:text-blue-800 transition-colors line-clamp-2">
+      <div className="mt-3 sm:mt-4 px-0.5 sm:px-1 flex flex-col flex-grow">
+        <Link href={`/product/${slug}`} className="block">
+          <h3 className="text-[13px] sm:text-[15px] leading-snug text-ink-900 font-medium hover:text-sienna-500 transition-colors line-clamp-2">
             {name}
           </h3>
         </Link>
 
+        <div className="mt-1 sm:mt-1.5 flex items-baseline gap-1.5 sm:gap-2 flex-wrap">
+          <span className="text-[12px] sm:text-[14px] text-ink-700">
+            {hasVariants && minVariantPrice ? `From ${formatPrice(minVariantPrice)}` : formatPrice(price)}
+          </span>
+          {originalPrice && originalPrice > displayPrice && (
+            <span className="text-[11px] sm:text-[12px] text-ink-300 line-through">{formatPrice(originalPrice)}</span>
+          )}
+        </div>
+
         {colorVariants.length > 0 && (
-          <div className="flex items-center gap-1.5 mb-2">
+          <div className="flex items-center gap-1 sm:gap-1.5 mt-2 sm:mt-3">
             {colorVariants.slice(0, MAX_SWATCHES).map((color) => (
               <button
                 key={color.name}
@@ -149,39 +188,29 @@ export default function ProductCard({
                   e.preventDefault();
                   setActiveColor(activeColor === color.name ? null : color.name);
                 }}
-                className={`w-4 h-4 rounded-full border transition-all duration-200 flex-shrink-0 ${
+                className={`w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full border transition-all duration-200 flex-shrink-0 ${
                   activeColor === color.name
-                    ? 'ring-2 ring-offset-1 ring-blue-600 scale-110'
+                    ? 'ring-2 ring-offset-1 ring-sienna-500 scale-110'
                     : 'hover:scale-110'
-                } ${color.hex === '#FFFFFF' ? 'border-gray-300' : 'border-transparent'}`}
+                } ${color.hex === '#FFFFFF' ? 'border-ink-200' : 'border-ink-200/40'}`}
                 style={{ backgroundColor: color.hex }}
+                aria-label={`Color: ${color.name}`}
               />
             ))}
             {colorVariants.length > MAX_SWATCHES && (
-              <span className="text-xs text-gray-400 ml-0.5">+{colorVariants.length - MAX_SWATCHES}</span>
+              <span className="text-[10px] sm:text-[11px] text-ink-300 ml-0.5">+{colorVariants.length - MAX_SWATCHES}</span>
             )}
           </div>
         )}
 
-        <div className="flex items-baseline space-x-2 mb-2">
-          {hasVariants && minVariantPrice ? (
-            <span className="text-gray-900 font-semibold">From {formatPrice(minVariantPrice)}</span>
-          ) : (
-            <span className="text-gray-900 font-semibold">{formatPrice(price)}</span>
-          )}
-          {originalPrice && (
-            <span className="text-sm text-gray-400 line-through">{formatPrice(originalPrice)}</span>
-          )}
-        </div>
-
-        <div className="mt-auto pt-2 lg:hidden">
+        {/* Mobile add-to-bag */}
+        <div className="mt-3 sm:mt-4 pt-0.5 sm:pt-1 lg:hidden">
           {hasVariants ? (
             <Link
               href={`/product/${slug}`}
-              className="w-full border border-gray-200 text-gray-900 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50 active:bg-gray-100 transition-colors flex items-center justify-center space-x-1"
+              className="w-full inline-flex items-center justify-center border border-ink-200 hover:border-ink-900 text-ink-900 py-2 sm:py-2.5 text-[9px] sm:text-[10px] tracking-[0.2em] sm:tracking-[0.22em] uppercase font-semibold transition-colors"
             >
-              <i className="ri-list-check text-sm"></i>
-              <span>Select Options</span>
+              Select Options
             </Link>
           ) : (
             <button
@@ -190,13 +219,13 @@ export default function ProductCard({
                 addToCart({ id, name, price, image, quantity: moq, slug, maxStock, moq });
               }}
               disabled={!inStock}
-              className="w-full border border-gray-200 text-gray-900 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50 active:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full border border-ink-200 hover:border-ink-900 text-ink-900 py-2 sm:py-2.5 text-[9px] sm:text-[10px] tracking-[0.2em] sm:tracking-[0.22em] uppercase font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {moq > 1 ? `Add ${moq} to Cart` : 'Add to Cart'}
+              {moq > 1 ? `Add ${moq} to Bag` : 'Add to Bag'}
             </button>
           )}
         </div>
       </div>
-    </div>
+    </article>
   );
 }

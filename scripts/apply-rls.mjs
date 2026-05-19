@@ -7,7 +7,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = 'https://bskojprmfxugvkycvetc.supabase.co';
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://YOUR_PROJECT_REF.supabase.co';
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!SERVICE_ROLE_KEY) {
@@ -236,7 +236,7 @@ const SQL_STATEMENTS = [
 ];
 
 console.log('=== Applying RLS Policies to Supabase ===\n');
-console.log(`Project: bskojprmfxugvkycvetc`);
+console.log(`Project: ${SUPABASE_URL}`);
 console.log(`Total SQL statements: ${SQL_STATEMENTS.length}\n`);
 
 let succeeded = 0;
@@ -279,6 +279,7 @@ console.log(`Skipped: ${skipped}`);
 if (failed > 0) {
     console.log(`\nNOTE: If all statements failed with "function exec_sql does not exist",`);
     console.log(`you need to run these SQL statements directly in the Supabase SQL Editor.`);
-    console.log(`Go to: https://supabase.com/dashboard/project/bskojprmfxugvkycvetc/sql/new`);
+    const projectRef = (SUPABASE_URL.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1]) || 'YOUR_PROJECT_REF';
+    console.log(`Go to: https://supabase.com/dashboard/project/${projectRef}/sql/new`);
     console.log(`\nCopy the SQL from SECURITY_RLS_SETUP.md and run it there.`);
 }

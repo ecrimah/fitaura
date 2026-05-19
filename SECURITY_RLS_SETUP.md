@@ -2,12 +2,12 @@
 
 ## Why This Is Urgent
 
-Your Supabase anon key is public (visible in browser JavaScript). Without RLS, **anyone** can query ALL your tables directly using that key. This is likely how the attacker accessed your customer data.
+Your Supabase anon key is public (visible in browser JavaScript). Without RLS, **anyone** can query ALL your tables directly using that key. Enable RLS on every table before going to production.
 
 ## How to Enable RLS
 
-Go to your Supabase Dashboard:
-**https://supabase.com/dashboard/project/bskojprmfxugvkycvetc**
+Go to your Supabase Dashboard for **your project**:
+**https://supabase.com/dashboard/project/YOUR_SUPABASE_PROJECT_REF**
 
 Navigate to: **Database → Tables** (or **Table Editor**)
 

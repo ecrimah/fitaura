@@ -47,40 +47,39 @@ function OrderSuccessContent() {
     fetchOrder();
   }, [orderNumber, paymentSuccess]);
 
-  // Payment verification - called when user is redirected from Moolre with payment_success=true
-  const verifyPayment = async (orderNum: string, initialOrder: any) => {
+  // Payment verification — runs when the user returns from Stripe with
+  // payment_success=true. The webhook is the source of truth, so we
+  // wait briefly for it to fire and only ping `/verify` as a fallback.
+  const verifyPayment = async (orderNum: string, _initialOrder: any) => {
     setVerifying(true);
-    
-    // Wait 3 seconds to give the callback a chance to process first
+
+    // Give the Stripe webhook ~3s to land before we fall back to polling.
     await new Promise(resolve => setTimeout(resolve, 3000));
-    
-    // Re-fetch order to check if callback already updated it
+
     const { data: refreshed } = await supabase
       .from('orders')
       .select('*, order_items (*)')
       .eq('order_number', orderNum)
       .single();
-    
+
     if (refreshed?.payment_status === 'paid') {
       setOrder(refreshed);
       setVerifying(false);
       return;
     }
 
-    // Callback hasn't fired - verify via our endpoint
-    // Verify payment via Moolre API — we no longer trust the redirect alone
+    // Webhook hasn't reached us yet — ask the verify endpoint to
+    // re-check the PaymentIntent on Stripe directly.
     try {
-      const res = await fetch('/api/payment/moolre/verify', {
+      const res = await fetch('/api/payment/stripe/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderNumber: orderNum })
+        body: JSON.stringify({ orderNumber: orderNum }),
       });
-      
+
       const result = await res.json();
-      console.log('Payment verification result:', result);
-      
+
       if (result.success && result.payment_status === 'paid') {
-        // Re-fetch full order data
         const { data: updated } = await supabase
           .from('orders')
           .select('*, order_items (*)')
@@ -99,7 +98,7 @@ function OrderSuccessContent() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <i className="ri-loader-4-line text-4xl text-blue-700 animate-spin mb-4 block"></i>
+          <i className="ri-loader-4-line text-4xl text-sienna-500 animate-spin mb-4 block"></i>
           <p className="text-gray-500">Loading order details...</p>
         </div>
       </div>
@@ -114,7 +113,7 @@ function OrderSuccessContent() {
           <i className="ri-error-warning-line text-4xl text-red-500 mb-4 block"></i>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Order Not Found</h1>
           <p className="text-gray-600 mb-6">We couldn't locate the order details.</p>
-          <Link href="/shop" className="text-blue-700 font-semibold hover:underline">
+          <Link href="/shop" className="text-sienna-500 font-semibold hover:underline">
             Return to Shop
           </Link>
         </div>
@@ -127,7 +126,7 @@ function OrderSuccessContent() {
   const pointsEarned = Math.floor(order.total / 10); // Example logic: 1 point per 10 currency units
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
+    <main className="min-h-screen bg-gradient-to-br from-cream-100 via-white to-cream-100">
       {showConfetti && (
         <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
           {[...Array(50)].map((_, i) => (
@@ -150,8 +149,8 @@ function OrderSuccessContent() {
       <section className="py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
           <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12 text-center mb-8">
-            <div className="w-24 h-24 flex items-center justify-center mx-auto mb-6 bg-blue-100 rounded-full">
-              <i className="ri-checkbox-circle-fill text-6xl text-blue-600"></i>
+            <div className="w-24 h-24 flex items-center justify-center mx-auto mb-6 bg-sienna-50 rounded-full">
+              <i className="ri-checkbox-circle-fill text-6xl text-sienna-500"></i>
             </div>
 
             <h1 className="text-4xl font-bold text-gray-900 mb-4">Order Confirmed!</h1>
@@ -159,7 +158,7 @@ function OrderSuccessContent() {
               Thank you for your purchase. We're processing your order now.
             </p>
 
-            <div className="bg-blue-50 rounded-xl p-6 mb-8">
+            <div className="bg-cream-100 rounded-xl p-6 mb-8">
               <div className="grid md:grid-cols-3 gap-6 text-center">
                 <div>
                   <p className="text-sm text-gray-600 mb-1">Order Number</p>
@@ -171,7 +170,7 @@ function OrderSuccessContent() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-600 mb-1">Estimated Delivery</p>
-                  <p className="text-lg font-bold text-blue-700">{estimatedDelivery}</p>
+                  <p className="text-lg font-bold text-sienna-500">{estimatedDelivery}</p>
                 </div>
               </div>
             </div>
@@ -179,7 +178,7 @@ function OrderSuccessContent() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
               <Link
                 href={`/account?tab=orders`}
-                className="bg-blue-700 hover:bg-blue-800 text-white px-8 py-4 rounded-lg font-semibold transition-colors inline-flex items-center justify-center whitespace-nowrap"
+                className="bg-sienna-500 hover:bg-sienna-600 text-white px-8 py-4 rounded-lg font-semibold transition-colors inline-flex items-center justify-center whitespace-nowrap"
               >
                 <i className="ri-file-list-3-line mr-2"></i>
                 View Order
@@ -239,23 +238,23 @@ function OrderSuccessContent() {
                         </p>
                       )}
                     </div>
-                    <p className="font-bold text-gray-900">GH₵{item.unit_price.toFixed(2)}</p>
+                    <p className="font-bold text-gray-900">${item.unit_price.toFixed(2)}</p>
                   </div>
                 ))}
               </div>
               <div className="border-t border-gray-200 mt-4 pt-4">
                 <div className="flex justify-between text-sm text-gray-600 mb-2">
                   <span>Subtotal</span>
-                  <span>GH₵{order.subtotal.toFixed(2)}</span>
+                  <span>${order.subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm text-gray-600 mb-2">
                   <span>Shipping</span>
-                  <span>GH₵{order.shipping_total.toFixed(2)}</span>
+                  <span>${order.shipping_total.toFixed(2)}</span>
                 </div>
 
                 <div className="flex justify-between text-xl font-bold text-gray-900 border-t border-gray-200 pt-2">
                   <span>Total Paid</span>
-                  <span>GH₵{order.total.toFixed(2)}</span>
+                  <span>${order.total.toFixed(2)}</span>
                 </div>
               </div>
             </div>
@@ -293,21 +292,21 @@ function OrderSuccessContent() {
                 <h3 className="font-semibold text-gray-900 mb-3">What's Next?</h3>
                 <div className="space-y-3">
                   <div className="flex items-start space-x-3">
-                    <i className="ri-mail-line text-blue-700 mt-1"></i>
+                    <i className="ri-mail-line text-sienna-500 mt-1"></i>
                     <div>
                       <p className="text-sm font-semibold text-gray-900">Email Confirmation</p>
                       <p className="text-sm text-gray-600">Sent to {order.email}</p>
                     </div>
                   </div>
                   <div className="flex items-start space-x-3">
-                    <i className="ri-box-3-line text-blue-700 mt-1"></i>
+                    <i className="ri-box-3-line text-sienna-500 mt-1"></i>
                     <div>
                       <p className="text-sm font-semibold text-gray-900">Processing</p>
                       <p className="text-sm text-gray-600">We'll pack your order today</p>
                     </div>
                   </div>
                   <div className="flex items-start space-x-3">
-                    <i className="ri-truck-line text-blue-700 mt-1"></i>
+                    <i className="ri-truck-line text-sienna-500 mt-1"></i>
                     <div>
                       <p className="text-sm font-semibold text-gray-900">Shipping Updates</p>
                       <p className="text-sm text-gray-600">Track via email & SMS</p>
@@ -321,15 +320,15 @@ function OrderSuccessContent() {
           <div className="mt-8 text-center">
             <p className="text-gray-600 mb-4">Need help with your order?</p>
             <div className="flex flex-wrap justify-center gap-4">
-              <Link href="/contact" className="text-blue-700 hover:text-blue-900 font-semibold whitespace-nowrap">
+              <Link href="/contact" className="text-sienna-500 hover:text-ink-900 font-semibold whitespace-nowrap">
                 <i className="ri-customer-service-line mr-1"></i>
                 Contact Support
               </Link>
-              <Link href="/account/orders" className="text-blue-700 hover:text-blue-900 font-semibold whitespace-nowrap">
+              <Link href="/account/orders" className="text-sienna-500 hover:text-ink-900 font-semibold whitespace-nowrap">
                 <i className="ri-question-line mr-1"></i>
                 Order Help
               </Link>
-              <Link href="/returns" className="text-blue-700 hover:text-blue-900 font-semibold whitespace-nowrap">
+              <Link href="/returns" className="text-sienna-500 hover:text-ink-900 font-semibold whitespace-nowrap">
                 <i className="ri-arrow-left-right-line mr-1"></i>
                 Returns Policy
               </Link>
@@ -357,7 +356,7 @@ export default function OrderSuccessPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center">
-        <div className="w-16 h-16 border-4 border-blue-700 border-t-transparent rounded-full animate-spin"></div>
+        <div className="w-16 h-16 border-4 border-sienna-500 border-t-transparent rounded-full animate-spin"></div>
       </div>
     }>
       <OrderSuccessContent />

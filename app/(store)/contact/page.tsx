@@ -88,19 +88,22 @@ export default function ContactPage() {
   };
 
   // Get contact details from CMS settings
-  const contactEmail = getSetting('contact_email') || 'tiwaperfumestyle@gmail.com';
-  const contactPhone = getSetting('contact_phone') || '0545010949';
-  const contactWhatsapp = getSetting('contact_whatsapp') || '0554169992';
-  const contactAddress = getSetting('contact_address') || 'Satellite, Accra';
+  const contactEmail = getSetting('contact_email') || 'hello@shopfitaura.com';
+  const contactPhone = getSetting('contact_phone') || '+1 (587) 432-6761';
+  const contactWhatsapp = getSetting('contact_whatsapp') || '+15874326761';
+  const contactAddress = getSetting('contact_address') || 'Calgary, Alberta, Canada';
 
   const heroTitle = pageContent?.title || 'Get In Touch';
   const heroSubtitle = pageContent?.subtitle || 'Have a question or need assistance?';
   const heroContent = pageContent?.content || 'Our friendly team is here to help. Reach out through any of our contact channels.';
 
+  // Build telephone + WhatsApp links from the configured phone numbers.
+  // Accepts any human-readable format ("+1 (587) 432-6761", "+15874326761", etc.);
+  // strips to E.164 digits-only for wa.me, keeps the leading + for tel:.
   const waNumber = contactWhatsapp.replace(/[^0-9]/g, '');
-  const waLink = waNumber.startsWith('0') ? `https://wa.me/233${waNumber.slice(1)}` : `https://wa.me/${waNumber}`;
-  const telNumber = contactPhone.replace(/\s/g, '');
-  const telLink = telNumber.startsWith('0') ? `tel:+233${telNumber.slice(1)}` : `tel:${telNumber}`;
+  const waLink = `https://wa.me/${waNumber}`;
+  const telDigits = contactPhone.replace(/[^0-9+]/g, '');
+  const telLink = telDigits.startsWith('+') ? `tel:${telDigits}` : `tel:+${telDigits}`;
 
   const contactMethods = [
     {
@@ -108,7 +111,7 @@ export default function ContactPage() {
       title: 'Call Us',
       value: contactPhone,
       link: telLink,
-      description: 'Mon-Fri, 8am-6pm GMT'
+      description: 'Mon–Sat · 9:00 AM – 7:00 PM MST'
     },
     {
       icon: 'ri-mail-line',
@@ -118,42 +121,43 @@ export default function ContactPage() {
       description: 'We respond within 24 hours'
     },
     {
-      icon: 'ri-whatsapp-line',
-      title: 'WhatsApp',
-      value: contactWhatsapp,
-      link: waLink,
-      description: 'Chat with us instantly'
+      icon: 'ri-instagram-line',
+      title: 'DM Us',
+      value: '@fitaura.ca',
+      link: 'https://instagram.com/fitaura.ca',
+      description: 'Fastest replies on Instagram'
     },
     {
       icon: 'ri-map-pin-line',
-      title: 'Visit Us',
+      title: 'Designed In',
       value: contactAddress,
-      link: 'https://maps.google.com',
-      description: 'Satellite, Accra'
+      link: 'https://maps.google.com/?q=Calgary,+Alberta,+Canada',
+      description: 'Shipping across Canada & beyond'
     }
   ];
 
   const faqs = [
     {
       question: 'What are your delivery times?',
-      answer: 'Standard delivery takes 2-5 business days within Ghana. Express delivery is available for Accra and Kumasi. We ship perfumes and fragrances with care.'
+      answer: 'Standard delivery across Canada takes 3–7 business days. Calgary local orders typically arrive within 2 business days. Express options are available at checkout.'
     },
     {
       question: 'Do you offer international shipping?',
-      answer: 'Currently, we ship within Ghana only. We handle all logistics so you simply order and receive your perfumes.'
+      answer: 'Yes — we ship to the United States, the UK and most of Europe. Shipping fees and timelines are calculated at checkout. Reach out for any specific country.'
     },
     {
       question: 'What payment methods do you accept?',
-      answer: 'We accept MOMO, Instant Bank Transfer, Cash (in store only), and Visa Card. Please note we do not accept payment on delivery.'
+      answer: 'We accept all major credit cards (Visa, Mastercard, Amex), Apple Pay, Google Pay and Interac e-Transfer. All payments are processed securely; we do not store card details.'
     }
   ];
 
   return (
     <div className="min-h-screen bg-white">
       <PageHero
+        eyebrow="Studio · Calgary"
         title="Get In Touch"
-        subtitle="Have a question or need assistance? We're here to help from Satellite, Accra."
-        backgroundImage="/Whisk_835b10a10eab0caa2c7419d4a6e01102dr.jpeg"
+        subtitle="Designed in Calgary, shipping worldwide. Our team responds within 24 hours."
+        backgroundImage="/brand/contact-hero.jpg"
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
@@ -164,13 +168,13 @@ export default function ContactPage() {
               href={method.link}
               target={method.link.startsWith('http') ? '_blank' : '_self'}
               rel={method.link.startsWith('http') ? 'noopener noreferrer' : ''}
-              className="bg-white border border-gray-200 p-6 rounded-2xl hover:shadow-lg hover:border-blue-200 transition-all cursor-pointer"
+              className="bg-white border border-gray-200 p-6 rounded-2xl hover:shadow-lg hover:border-sienna-100 transition-all cursor-pointer"
             >
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-                <i className={`${method.icon} text-2xl text-blue-700`}></i>
+              <div className="w-12 h-12 bg-sienna-50 rounded-full flex items-center justify-center mb-4">
+                <i className={`${method.icon} text-2xl text-sienna-500`}></i>
               </div>
               <h3 className="font-bold text-gray-900 mb-2">{method.title}</h3>
-              <p className="text-blue-700 font-medium mb-1">{method.value}</p>
+              <p className="text-sienna-500 font-medium mb-1">{method.value}</p>
               <p className="text-sm text-gray-500">{method.description}</p>
             </a>
           ))}
@@ -196,7 +200,7 @@ export default function ContactPage() {
                   required
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sienna-500 focus:border-transparent text-sm"
                   placeholder="John Doe"
                 />
               </div>
@@ -212,7 +216,7 @@ export default function ContactPage() {
                   required
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sienna-500 focus:border-transparent text-sm"
                   placeholder="john@example.com"
                 />
               </div>
@@ -227,8 +231,8 @@ export default function ContactPage() {
                   name="phone"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                  placeholder="+233 XX XXX XXXX"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sienna-500 focus:border-transparent text-sm"
+                  placeholder="+1 (587) 432-6761"
                 />
               </div>
 
@@ -243,7 +247,7 @@ export default function ContactPage() {
                   required
                   value={formData.subject}
                   onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sienna-500 focus:border-transparent text-sm"
                   placeholder="Order inquiry, product question, etc."
                 />
               </div>
@@ -260,14 +264,14 @@ export default function ContactPage() {
                   maxLength={500}
                   value={formData.message}
                   onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sienna-500 focus:border-transparent resize-none text-sm"
                   placeholder="Tell us how we can help you..."
                 ></textarea>
                 <p className="text-xs text-gray-500 mt-1">{formData.message.length}/500 characters</p>
               </div>
 
               {submitStatus === 'success' && (
-                <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-xl">
+                <div className="bg-cream-100 border border-sienna-100 text-sienna-500 px-4 py-3 rounded-xl">
                   <i className="ri-check-line mr-2"></i>
                   Message sent successfully! We'll respond within 24 hours.
                 </div>
@@ -283,7 +287,7 @@ export default function ContactPage() {
               <button
                 type="submit"
                 disabled={isSubmitting || verifying}
-                className="w-full bg-blue-700 text-white py-4 rounded-xl font-medium hover:bg-blue-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap cursor-pointer"
+                className="w-full bg-sienna-500 text-white py-4 rounded-xl font-medium hover:bg-sienna-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap cursor-pointer"
               >
                 {isSubmitting || verifying ? (verifying ? 'Verifying...' : 'Sending...') : 'Send Message'}
               </button>
@@ -309,19 +313,19 @@ export default function ContactPage() {
               ))}
             </div>
 
-            <div className="bg-gradient-to-br from-blue-700 to-blue-900 p-8 rounded-2xl text-white">
+            <div className="bg-gradient-to-br from-sienna-500 to-ink-900 p-8 rounded-2xl text-white">
               <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-4">
                 <i className="ri-customer-service-2-line text-2xl"></i>
               </div>
               <h3 className="text-2xl font-bold mb-3">Need Immediate Help?</h3>
-              <p className="text-blue-100 mb-6 leading-relaxed">
-                Our customer support team is available Monday to Friday, 8am-6pm GMT. For urgent matters, reach out via WhatsApp.
+              <p className="text-sienna-50 mb-6 leading-relaxed">
+                Our customer support is available during business hours. For urgent matters, reach out via WhatsApp.
               </p>
               <a
                 href={waLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 bg-white text-blue-700 px-6 py-3 rounded-full font-medium hover:bg-blue-50 transition-colors whitespace-nowrap"
+                className="inline-flex items-center gap-2 bg-white text-sienna-500 px-6 py-3 rounded-full font-medium hover:bg-cream-100 transition-colors whitespace-nowrap"
               >
                 <i className="ri-whatsapp-line text-xl"></i>
                 Chat on WhatsApp
@@ -334,18 +338,18 @@ export default function ContactPage() {
       <div className="bg-gray-50 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">Visit Our Store</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">Designed In Calgary, Worn Everywhere</h2>
             <p className="text-gray-600 mb-6 leading-relaxed">
-              Prefer to shop in person? Visit our store. Our knowledgeable staff will be happy to assist you with product selection and answer any questions.
+              FITAURA is online-first — every order ships from Canada with tracking included. Need help with sizing or styling? Our team is happy to chat by phone, email or Instagram DM.
             </p>
             <div className="flex flex-wrap justify-center gap-4 text-gray-600">
               <div className="flex items-center gap-2">
-                <i className="ri-map-pin-2-line text-blue-700"></i>
+                <i className="ri-map-pin-2-line text-sienna-500"></i>
                 <span>{contactAddress}</span>
               </div>
               <div className="flex items-center gap-2">
-                <i className="ri-time-line text-blue-700"></i>
-                <span>Mon-Sat: 9am-6pm</span>
+                <i className="ri-time-line text-sienna-500"></i>
+                <span>Mon–Sat · 9:00 AM – 7:00 PM MST</span>
               </div>
             </div>
           </div>

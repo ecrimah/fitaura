@@ -4,41 +4,60 @@ import { CartProvider } from "@/context/CartContext";
 import { WishlistProvider } from "@/context/WishlistContext";
 import "./globals.css";
 
+const SITE_NAME = 'FITAURA';
+const SITE_TAGLINE_SHORT = 'Confidence In Motion.';
+const SITE_TAGLINE = 'Modern lifestyle clothing — gymwear, athleisure and fashion-forward apparel built to empower confidence and comfort. Designed in Calgary, shipping worldwide.';
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://shopfitaura.com';
+const OG_IMAGE = `${SITE_URL}/og-image.png`;
+const OG_IMAGE_SQUARE = `${SITE_URL}/og-image-square.png`;
+
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
-  themeColor: '#2563eb',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#FBF7F1' },
+    { media: '(prefers-color-scheme: dark)', color: '#26261F' },
+  ],
+  colorScheme: 'light',
 };
 
-const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://tiwaperfumestyle.com';
-
-// Favicon & OG: uses tiwa logo.png from public
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
+  metadataBase: new URL(SITE_URL),
   title: {
-    default: "TIWAA PERFUME STYLE HOUSE | Perfumes Wholesale & Retail — Satellite, Accra",
-    template: "%s | TIWAA PERFUME STYLE HOUSE"
+    default: `${SITE_NAME} — ${SITE_TAGLINE_SHORT}`,
+    template: `%s | ${SITE_NAME}`,
   },
-  description: "I sell perfumes — wholesale and retail. Satellite, Accra. Call 054 501 0949 · WhatsApp 055 416 9992.",
+  description: SITE_TAGLINE,
+  applicationName: SITE_NAME,
+  authors: [{ name: SITE_NAME, url: SITE_URL }],
+  generator: 'Next.js',
+  creator: SITE_NAME,
+  publisher: SITE_NAME,
+  referrer: 'origin-when-cross-origin',
   keywords: [
-    "TIWAA PERFUME STYLE HOUSE",
-    "perfumes Ghana",
-    "wholesale perfumes Accra",
-    "retail perfumes",
-    "Satellite Accra",
-    "fragrance Ghana",
-    "Ghana perfumes",
-    "Accra perfume shop"
+    'FITAURA',
+    'shopfitaura',
+    'activewear Canada',
+    'gymwear Canada',
+    'athleisure Calgary',
+    'leggings Canada',
+    'sports bra Canada',
+    'loungewear Calgary',
+    'modern lifestyle clothing',
+    'fashion-forward apparel',
+    'Canadian clothing brand',
+    'sustainable activewear',
+    'Calgary fashion brand',
+    'sculpting leggings',
+    'seamless sports bra',
   ],
-  authors: [{ name: "TIWAA PERFUME STYLE HOUSE" }],
-  creator: "TIWAA PERFUME STYLE HOUSE",
-  publisher: "TIWAA PERFUME STYLE HOUSE",
-  applicationName: "TIWAA PERFUME STYLE HOUSE",
-  referrer: "origin-when-cross-origin",
+  category: 'shopping',
+  classification: 'Ecommerce, Apparel, Activewear',
   robots: {
     index: true,
     follow: true,
+    nocache: false,
     googleBot: {
       index: true,
       follow: true,
@@ -47,18 +66,33 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
+  // Next.js auto-injects <link rel="icon" href="/favicon.ico"> from
+  // app/favicon.ico, so don't list it here (avoids duplicate tags).
+  // The `?v=N` query bumps the browser's persistent favicon cache without
+  // changing the file path. Increment when /public/favicon-*.png changes.
   icons: {
     icon: [
-      { url: '/tiwa logo.png', sizes: 'any', type: 'image/png' },
+      { url: '/favicon-16x16.png?v=5', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon-32x32.png?v=5', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon-96x96.png?v=5', sizes: '96x96', type: 'image/png' },
+      { url: '/icon-192.png?v=5', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512.png?v=5', sizes: '512x512', type: 'image/png' },
     ],
-    shortcut: '/tiwa logo.png',
-    apple: '/tiwa logo.png',
+    apple: [
+      { url: '/apple-touch-icon.png?v=5', sizes: '180x180', type: 'image/png' },
+      { url: '/apple-touch-icon-167.png?v=5', sizes: '167x167', type: 'image/png' },
+      { url: '/apple-touch-icon-152.png?v=5', sizes: '152x152', type: 'image/png' },
+    ],
+    other: [
+      { rel: 'mask-icon', url: '/icon-512.png', color: '#D14F2B' },
+    ],
   },
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'TIWAA PERFUME',
+    title: SITE_NAME,
+    startupImage: ['/apple-touch-icon.png'],
   },
   formatDetection: {
     telephone: true,
@@ -66,41 +100,142 @@ export const metadata: Metadata = {
     address: false,
   },
   verification: {
-    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || '',
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || undefined,
+    other: process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION
+      ? { 'msvalidate.01': process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION }
+      : undefined,
   },
   openGraph: {
-    type: "website",
-    locale: "en_GH",
-    url: siteUrl,
-    title: "TIWAA PERFUME STYLE HOUSE | Perfumes Wholesale & Retail — Satellite, Accra",
-    description: "I sell perfumes — wholesale and retail. Satellite, Accra. Call 054 501 0949 · WhatsApp 055 416 9992.",
-    siteName: "TIWAA PERFUME STYLE HOUSE",
+    type: 'website',
+    locale: 'en_CA',
+    alternateLocale: ['en_US', 'en_GB'],
+    url: SITE_URL,
+    siteName: SITE_NAME,
+    title: `${SITE_NAME} — ${SITE_TAGLINE_SHORT}`,
+    description: SITE_TAGLINE,
     images: [
       {
-        url: "/tiwa logo.png",
+        url: OG_IMAGE,
         width: 1200,
         height: 630,
-        alt: "TIWAA PERFUME STYLE HOUSE — Perfumes Wholesale & Retail",
-        type: "image/png",
+        alt: `${SITE_NAME} — modern lifestyle clothing built to empower confidence and comfort.`,
+        type: 'image/png',
+      },
+      {
+        url: OG_IMAGE_SQUARE,
+        width: 1200,
+        height: 1200,
+        alt: SITE_NAME,
+        type: 'image/png',
       },
     ],
   },
   twitter: {
-    card: "summary_large_image",
-    title: "TIWAA PERFUME STYLE HOUSE | Perfumes Wholesale & Retail",
-    description: "I sell perfumes — wholesale and retail. Satellite, Accra. Call 054 501 0949 · WhatsApp 055 416 9992.",
-    images: ["/tiwa logo.png"],
+    card: 'summary_large_image',
+    site: '@fitaura_ca',
+    creator: '@fitaura_ca',
+    title: `${SITE_NAME} — ${SITE_TAGLINE_SHORT}`,
+    description: SITE_TAGLINE,
+    images: [OG_IMAGE],
   },
   alternates: {
-    canonical: siteUrl,
+    canonical: SITE_URL,
+    languages: {
+      'en-CA': SITE_URL,
+      'x-default': SITE_URL,
+    },
   },
-  category: "shopping",
+  // `other` is reserved for tags Next.js doesn't already render from the
+  // canonical metadata fields above. Don't duplicate format-detection,
+  // apple-mobile-web-app-*, or theme-color here — they're emitted from
+  // formatDetection / appleWebApp / viewport respectively.
+  other: {
+    'msapplication-config': '/browserconfig.xml',
+    'msapplication-TileColor': '#26261F',
+    'msapplication-TileImage': '/mstile-150.png',
+    'mobile-web-app-capable': 'yes',
+    'pinterest-rich-pin': 'true',
+  },
 };
 
-// Google Analytics Measurement ID
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
-// Google reCAPTCHA v3 Site Key
 const RECAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+
+const organizationJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  '@id': `${SITE_URL}/#organization`,
+  name: SITE_NAME,
+  legalName: 'FITAURA',
+  url: SITE_URL,
+  logo: {
+    '@type': 'ImageObject',
+    url: `${SITE_URL}/icon-512.png`,
+    width: 512,
+    height: 512,
+  },
+  image: OG_IMAGE,
+  description: SITE_TAGLINE,
+  foundingDate: '2026',
+  founders: [{ '@type': 'Person', name: 'FITAURA Team' }],
+  address: {
+    '@type': 'PostalAddress',
+    addressLocality: 'Calgary',
+    addressRegion: 'AB',
+    addressCountry: 'CA',
+  },
+  contactPoint: [
+    {
+      '@type': 'ContactPoint',
+      telephone: '+1-587-432-6761',
+      contactType: 'customer service',
+      email: 'hello@shopfitaura.com',
+      areaServed: ['CA', 'US'],
+      availableLanguage: ['en'],
+    },
+  ],
+  sameAs: ['https://instagram.com/fitaura.ca'],
+};
+
+const websiteJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  '@id': `${SITE_URL}/#website`,
+  name: SITE_NAME,
+  url: SITE_URL,
+  description: SITE_TAGLINE,
+  publisher: { '@id': `${SITE_URL}/#organization` },
+  inLanguage: 'en-CA',
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: {
+      '@type': 'EntryPoint',
+      urlTemplate: `${SITE_URL}/shop?search={search_term_string}`,
+    },
+    'query-input': 'required name=search_term_string',
+  },
+};
+
+const storeJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'OnlineStore',
+  '@id': `${SITE_URL}/#store`,
+  name: SITE_NAME,
+  url: SITE_URL,
+  description: SITE_TAGLINE,
+  image: OG_IMAGE,
+  logo: `${SITE_URL}/icon-512.png`,
+  paymentAccepted: ['Credit Card', 'Debit Card', 'Apple Pay', 'Google Pay'],
+  currenciesAccepted: 'CAD',
+  parentOrganization: { '@id': `${SITE_URL}/#organization` },
+  address: {
+    '@type': 'PostalAddress',
+    addressLocality: 'Calgary',
+    addressRegion: 'AB',
+    addressCountry: 'CA',
+  },
+  areaServed: [{ '@type': 'Country', name: 'Canada' }, { '@type': 'Country', name: 'United States' }],
+};
 
 export default function RootLayout({
   children,
@@ -108,64 +243,48 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en-CA">
       <head>
-        {/* PWA Meta Tags */}
-        <meta name="theme-color" content="#2563eb" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="TIWAA PERFUME" />
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="msapplication-TileColor" content="#2563eb" />
-        <meta name="msapplication-tap-highlight" content="no" />
-
-        {/* Favicon from public folder */}
-        <link rel="icon" href="/tiwa logo.png" type="image/png" sizes="any" />
-        <link rel="shortcut icon" href="/tiwa logo.png" />
-
-        {/* Apple Touch Icons from public */}
-        <link rel="apple-touch-icon" href="/tiwa logo.png" />
-        <link rel="apple-touch-startup-image" href="/tiwa logo.png" />
+        {/* theme-color is emitted by the `viewport` export above; do not duplicate here. */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href={process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ucbokethripnihazffcg.supabase.co'} crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
 
         <link
           href="https://cdn.jsdelivr.net/npm/remixicon@4.1.0/fonts/remixicon.css"
           rel="stylesheet"
         />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         {/* eslint-disable-next-line @next/next/no-page-custom-font -- App Router: fonts loaded in root layout apply to all pages */}
-        <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
+          rel="stylesheet"
+        />
 
-        {/* Structured Data - Organization */}
+        {/* Dev-only safety: on localhost, immediately unregister any leftover
+            service worker and clear all caches. This runs synchronously before
+            React hydration so stale SW-cached HTML can't cause mismatches. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var h=location.hostname;if(h==='localhost'||h==='127.0.0.1'||h==='0.0.0.0'){if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){r.unregister();});});}if(typeof caches!=='undefined'){caches.keys().then(function(ks){ks.forEach(function(k){caches.delete(k);});});}if(!sessionStorage.getItem('__fitaura_dev_sw_cleared__')){sessionStorage.setItem('__fitaura_dev_sw_cleared__','1');setTimeout(function(){location.reload();},150);}}}catch(e){}})();`,
+          }}
+        />
+
+        {/* Site-wide JSON-LD: Organization, WebSite (with sitelinks search), OnlineStore */}
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "Organization",
-              "name": "TIWAA PERFUME STYLE HOUSE",
-              "url": siteUrl,
-              "logo": siteUrl + "/tiwa%20logo.png",
-              "description": "I sell perfumes — wholesale and retail. Satellite, Accra.",
-              "address": {
-                "@type": "PostalAddress",
-                "addressCountry": "GH",
-                "addressLocality": "Accra",
-                "streetAddress": "Satellite, Accra"
-              },
-              "telephone": "+233545010949",
-              "contactPoint": {
-                "@type": "ContactPoint",
-                "contactType": "customer service",
-                "telephone": "+233545010949",
-                "availableLanguage": "English"
-              }
-            })
-          }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(storeJsonLd) }}
         />
       </head>
 
-      {/* Google Analytics */}
       {GA_MEASUREMENT_ID && (
         <>
           <Script
@@ -185,7 +304,6 @@ export default function RootLayout({
         </>
       )}
 
-      {/* Google reCAPTCHA v3 */}
       {RECAPTCHA_SITE_KEY && (
         <Script
           src={`https://www.google.com/recaptcha/api.js?render=${RECAPTCHA_SITE_KEY}`}
@@ -193,10 +311,10 @@ export default function RootLayout({
         />
       )}
 
-      <body className="antialiased font-sans overflow-x-hidden pwa-body">
+      <body className="antialiased font-sans bg-cream-50 text-ink-700 overflow-x-hidden pwa-body">
         <a
           href="#main-content"
-          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[10000] focus:px-6 focus:py-3 focus:bg-blue-600 focus:text-white focus:rounded-lg focus:font-semibold focus:shadow-lg"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[10000] focus:px-6 focus:py-3 focus:bg-sienna-500 focus:text-white focus:rounded-lg focus:font-semibold focus:shadow-lg"
         >
           Skip to main content
         </a>

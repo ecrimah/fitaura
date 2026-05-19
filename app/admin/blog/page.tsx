@@ -1,362 +1,385 @@
 'use client';
 
-import Link from 'next/link';
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
+
+type BlogStatus = 'draft' | 'published' | 'scheduled' | 'archived';
+
+interface BlogPost {
+  id?: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  content: string;
+  featured_image: string | null;
+  status: BlogStatus;
+  published_at: string | null;
+  seo_title: string;
+  seo_description: string;
+  tags: string[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+const EMPTY_POST: BlogPost = {
+  title: '',
+  slug: '',
+  excerpt: '',
+  content: '',
+  featured_image: null,
+  status: 'draft',
+  published_at: null,
+  seo_title: '',
+  seo_description: '',
+  tags: [],
+};
+
+const STATUS_STYLE: Record<BlogStatus, string> = {
+  published: 'bg-green-100 text-green-700',
+  draft: 'bg-gray-100 text-gray-600',
+  scheduled: 'bg-amber-100 text-amber-700',
+  archived: 'bg-gray-200 text-gray-500',
+};
+
+function slugify(value: string): string {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
+}
 
 export default function AdminBlogPage() {
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [selectedPosts, setSelectedPosts] = useState<number[]>([]);
+  const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<'all' | BlogStatus>('all');
+  const [editing, setEditing] = useState<BlogPost | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
-  const posts = [
-    {
-      id: 1,
-      title: '10 Essential Tips for Creating a Minimalist Home',
-      slug: '10-essential-tips-minimalist-home',
-      author: 'Sarah Johnson',
-      category: 'Interior Design',
-      image: 'https://readdy.ai/api/search-image?query=modern%20minimalist%20living%20room%20interior%20design%20with%20clean%20lines%20natural%20light%20and%20simple%20elegant%20furniture%20in%20neutral%20tones&width=600&height=400&seq=blogadm1&orientation=landscape',
-      excerpt: 'Discover how to transform your living space into a serene minimalist haven with these practical tips...',
-      status: 'Published',
-      views: 2456,
-      comments: 23,
-      publishDate: 'Dec 15, 2024',
-      featured: true
-    },
-    {
-      id: 2,
-      title: 'The Art of Choosing Perfect Home Textiles',
-      slug: 'art-of-choosing-perfect-home-textiles',
-      author: 'Michael Chen',
-      category: 'Home Styling',
-      image: 'https://readdy.ai/api/search-image?query=luxurious%20home%20textiles%20collection%20with%20cotton%20linens%20throws%20and%20pillows%20in%20natural%20cream%20and%20beige%20tones%20on%20elegant%20display&width=600&height=400&seq=blogadm2&orientation=landscape',
-      excerpt: 'Learn the secrets to selecting textiles that elevate your home aesthetic and comfort...',
-      status: 'Published',
-      views: 1892,
-      comments: 18,
-      publishDate: 'Dec 10, 2024',
-      featured: true
-    },
-    {
-      id: 3,
-      title: 'Sustainable Living: Eco-Friendly Home Products Guide',
-      slug: 'sustainable-living-eco-friendly-guide',
-      author: 'Emma Williams',
-      category: 'Sustainability',
-      image: 'https://readdy.ai/api/search-image?query=eco-friendly%20sustainable%20home%20products%20including%20natural%20materials%20bamboo%20organic%20cotton%20and%20reusable%20items%20arranged%20aesthetically&width=600&height=400&seq=blogadm3&orientation=landscape',
-      excerpt: 'Make conscious choices for your home with our comprehensive guide to sustainable products...',
-      status: 'Published',
-      views: 3124,
-      comments: 31,
-      publishDate: 'Dec 5, 2024',
-      featured: true
-    },
-    {
-      id: 4,
-      title: 'Lighting Design: Creating Ambiance in Every Room',
-      slug: 'lighting-design-creating-ambiance',
-      author: 'David Martinez',
-      category: 'Interior Design',
-      image: 'https://readdy.ai/api/search-image?query=elegant%20contemporary%20home%20lighting%20design%20with%20brass%20fixtures%20pendant%20lights%20and%20table%20lamps%20creating%20warm%20ambient%20atmosphere&width=600&height=400&seq=blogadm4&orientation=landscape',
-      excerpt: 'Master the art of lighting to transform the mood and functionality of your spaces...',
-      status: 'Draft',
-      views: 0,
-      comments: 0,
-      publishDate: 'Dec 25, 2024',
-      featured: false
-    },
-    {
-      id: 5,
-      title: 'Gift Guide: Thoughtful Home Accessories',
-      slug: 'gift-guide-thoughtful-home-accessories',
-      author: 'Sarah Johnson',
-      category: 'Gift Ideas',
-      image: 'https://readdy.ai/api/search-image?query=curated%20collection%20of%20elegant%20home%20accessories%20and%20decor%20items%20beautifully%20arranged%20as%20gift%20ideas%20on%20clean%20white%20background&width=600&height=400&seq=blogadm5&orientation=landscape',
-      excerpt: 'Find the perfect gifts for home lovers with our carefully curated selection...',
-      status: 'Scheduled',
-      views: 0,
-      comments: 0,
-      publishDate: 'Dec 22, 2024',
-      featured: false
-    },
-    {
-      id: 6,
-      title: 'Color Psychology: Choosing the Right Palette',
-      slug: 'color-psychology-choosing-palette',
-      author: 'Michael Chen',
-      category: 'Home Styling',
-      image: 'https://readdy.ai/api/search-image?query=color%20palette%20swatches%20and%20paint%20samples%20in%20harmonious%20neutral%20and%20earth%20tones%20for%20interior%20design%20inspiration&width=600&height=400&seq=blogadm6&orientation=landscape',
-      excerpt: 'Understand how colors affect mood and create the perfect atmosphere in your home...',
-      status: 'Published',
-      views: 1567,
-      comments: 14,
-      publishDate: 'Nov 28, 2024',
-      featured: false
+  const fetchPosts = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('blog_posts')
+        .select('id, title, slug, excerpt, content, featured_image, status, published_at, seo_title, seo_description, tags, created_at, updated_at')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setPosts((data ?? []) as BlogPost[]);
+    } catch (err) {
+      console.error('Fetch posts failed:', err);
+    } finally {
+      setLoading(false);
     }
-  ];
+  }, []);
 
-  const statusColors: any = {
-    'Published': 'bg-blue-100 text-blue-700',
-    'Draft': 'bg-gray-100 text-gray-700',
-    'Scheduled': 'bg-blue-100 text-blue-700'
+  useEffect(() => { fetchPosts(); }, [fetchPosts]);
+
+  const handleImageUpload = async (file: File): Promise<string | null> => {
+    try {
+      setUploading(true);
+      const ext = file.name.split('.').pop();
+      const filePath = `blog/${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from('products').upload(filePath, file);
+      if (error) throw error;
+      const { data: { publicUrl } } = supabase.storage.from('products').getPublicUrl(filePath);
+      return publicUrl;
+    } catch (err: unknown) {
+      alert('Upload failed: ' + (err instanceof Error ? err.message : String(err)));
+      return null;
+    } finally {
+      setUploading(false);
+    }
   };
 
-  const handleSelectAll = () => {
-    if (selectedPosts.length === posts.length) {
-      setSelectedPosts([]);
+  const handleSave = async () => {
+    if (!editing) return;
+    if (!editing.title.trim() || !editing.slug.trim() || !editing.content.trim()) {
+      return alert('Please fill title, slug and content.');
+    }
+    setSaving(true);
+    try {
+      const payload = {
+        title: editing.title,
+        slug: editing.slug,
+        excerpt: editing.excerpt,
+        content: editing.content,
+        featured_image: editing.featured_image,
+        status: editing.status,
+        published_at: editing.status === 'published' && !editing.published_at
+          ? new Date().toISOString()
+          : editing.published_at,
+        seo_title: editing.seo_title || null,
+        seo_description: editing.seo_description || null,
+        tags: editing.tags,
+        updated_at: new Date().toISOString(),
+      };
+      if (editing.id) {
+        const { error } = await supabase.from('blog_posts').update(payload).eq('id', editing.id);
+        if (error) throw error;
     } else {
-      setSelectedPosts(posts.map(p => p.id));
+        const { error } = await supabase.from('blog_posts').insert(payload);
+        if (error) throw error;
+      }
+      setEditing(null);
+      await fetchPosts();
+    } catch (err: unknown) {
+      alert('Save failed: ' + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleSelectPost = (postId: number) => {
-    if (selectedPosts.includes(postId)) {
-      setSelectedPosts(selectedPosts.filter(id => id !== postId));
-    } else {
-      setSelectedPosts([...selectedPosts, postId]);
-    }
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this post? This cannot be undone.')) return;
+    const { error } = await supabase.from('blog_posts').delete().eq('id', id);
+    if (error) return alert('Delete failed: ' + error.message);
+    setPosts(posts.filter((p) => p.id !== id));
   };
+
+  const handleStatusToggle = async (post: BlogPost) => {
+    if (!post.id) return;
+    const next: BlogStatus = post.status === 'published' ? 'draft' : 'published';
+    await supabase
+      .from('blog_posts')
+      .update({
+        status: next,
+        published_at: next === 'published' && !post.published_at ? new Date().toISOString() : post.published_at,
+      })
+      .eq('id', post.id);
+    fetchPosts();
+  };
+
+  const filtered = filter === 'all' ? posts : posts.filter((p) => p.status === filter);
+
+  const counts = {
+    all: posts.length,
+    published: posts.filter((p) => p.status === 'published').length,
+    draft: posts.filter((p) => p.status === 'draft').length,
+    scheduled: posts.filter((p) => p.status === 'scheduled').length,
+    archived: posts.filter((p) => p.status === 'archived').length,
+  };
+
+  if (loading) return <div className="text-center text-gray-500 py-20">Loading posts…</div>;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="max-w-6xl mx-auto">
+      <header className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Blog Posts</h1>
-          <p className="text-gray-600 mt-1">Create and manage your blog content</p>
+          <h1 className="text-2xl lg:text-3xl font-display tracking-wide text-gray-900">Journal</h1>
+          <p className="text-sm text-gray-500 mt-1">Write, publish, and manage FITAURA journal entries.</p>
         </div>
-        <Link href="/admin/blog/new" className="bg-blue-700 hover:bg-blue-800 text-white px-6 py-3 rounded-lg font-semibold transition-colors whitespace-nowrap">
-          <i className="ri-add-line mr-2"></i>
-          New Post
-        </Link>
+        <button
+          onClick={() => setEditing({ ...EMPTY_POST })}
+          className="bg-sienna-500 hover:bg-sienna-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+        >
+          + New Post
+        </button>
+      </header>
+
+      <div className="border-b border-gray-200 mb-6">
+        <nav className="flex gap-6 overflow-x-auto">
+          {([
+            ['all', `All (${counts.all})`],
+            ['published', `Published (${counts.published})`],
+            ['draft', `Draft (${counts.draft})`],
+            ['scheduled', `Scheduled (${counts.scheduled})`],
+            ['archived', `Archived (${counts.archived})`],
+          ] as [typeof filter, string][]).map(([id, label]) => (
+            <button
+              key={id}
+              onClick={() => setFilter(id)}
+              className={`pb-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${filter === id ? 'border-sienna-500 text-sienna-500' : 'border-transparent text-gray-500 hover:text-gray-900'}`}
+            >
+              {label}
+            </button>
+          ))}
+        </nav>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl border-2 border-gray-200 p-4">
-          <p className="text-sm text-gray-600 mb-1">Total Posts</p>
-          <p className="text-2xl font-bold text-gray-900">{posts.length}</p>
+      <div className="grid grid-cols-1 gap-3">
+        {filtered.map((p) => (
+          <div key={p.id} className="bg-white border border-gray-200 rounded-lg p-4 flex items-center gap-4">
+            <div className="w-24 h-16 rounded bg-gray-100 overflow-hidden flex-shrink-0">
+              {p.featured_image && (
+                // eslint-disable-next-line @next/next/no-img-element -- admin thumb
+                <img src={p.featured_image} alt="" className="w-full h-full object-cover" />
+              )}
         </div>
-        <div className="bg-white rounded-xl border-2 border-gray-200 p-4">
-          <p className="text-sm text-gray-600 mb-1">Published</p>
-          <p className="text-2xl font-bold text-blue-700">{posts.filter(p => p.status === 'Published').length}</p>
-        </div>
-        <div className="bg-white rounded-xl border-2 border-gray-200 p-4">
-          <p className="text-sm text-gray-600 mb-1">Total Views</p>
-          <p className="text-2xl font-bold text-gray-900">{posts.reduce((sum, p) => sum + p.views, 0).toLocaleString()}</p>
-        </div>
-        <div className="bg-white rounded-xl border-2 border-gray-200 p-4">
-          <p className="text-sm text-gray-600 mb-1">Comments</p>
-          <p className="text-2xl font-bold text-blue-700">{posts.reduce((sum, p) => sum + p.comments, 0)}</p>
-        </div>
+            <div className="flex-1 min-w-0">
+              <div className="font-semibold text-gray-900 truncate">{p.title}</div>
+              <div className="text-sm text-gray-500 truncate">{p.excerpt || '—'}</div>
+              <div className="text-xs text-gray-400 mt-1">
+                /{p.slug}
+                {p.published_at && <> · Published {new Date(p.published_at).toLocaleDateString()}</>}
       </div>
-
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <select className="px-4 py-2 pr-8 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-medium cursor-pointer">
-                <option>All Status</option>
-                <option>Published</option>
-                <option>Draft</option>
-                <option>Scheduled</option>
-              </select>
-              <select className="px-4 py-2 pr-8 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-medium cursor-pointer">
-                <option>All Categories</option>
-                <option>Interior Design</option>
-                <option>Home Styling</option>
-                <option>Sustainability</option>
-                <option>Gift Ideas</option>
-              </select>
-              <select className="px-4 py-2 pr-8 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-medium cursor-pointer">
-                <option>Sort by Date</option>
-                <option>Sort by Views</option>
-                <option>Sort by Comments</option>
-              </select>
             </div>
-            <div className="flex border-2 border-gray-300 rounded-lg overflow-hidden">
               <button
-                onClick={() => setViewMode('grid')}
-                className={`w-10 h-10 flex items-center justify-center transition-colors ${
-                  viewMode === 'grid' ? 'bg-blue-700 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                <i className="ri-grid-line text-xl"></i>
+              onClick={() => handleStatusToggle(p)}
+              className={`px-3 py-1.5 rounded text-xs font-semibold uppercase tracking-wider ${STATUS_STYLE[p.status]}`}
+            >
+              {p.status}
               </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`w-10 h-10 flex items-center justify-center border-l-2 border-gray-300 transition-colors ${
-                  viewMode === 'list' ? 'bg-blue-700 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                <i className="ri-list-check text-xl"></i>
-              </button>
+            <button onClick={() => setEditing(p)} className="text-sienna-500 hover:text-sienna-600 text-sm font-medium px-3 py-1">Edit</button>
+            <button onClick={() => p.id && handleDelete(p.id)} className="text-red-600 hover:text-red-700 text-sm font-medium px-3 py-1">Delete</button>
             </div>
-          </div>
-        </div>
-
-        {selectedPosts.length > 0 && (
-          <div className="p-4 bg-blue-50 border-b border-blue-200 flex items-center justify-between">
-            <p className="text-blue-800 font-semibold">
-              {selectedPosts.length} post{selectedPosts.length > 1 ? 's' : ''} selected
-            </p>
-            <div className="flex items-center space-x-2">
-              <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors whitespace-nowrap">
-                Publish
-              </button>
-              <button className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg text-sm font-medium transition-colors whitespace-nowrap">
-                Draft
-              </button>
-              <button className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors whitespace-nowrap">
-                Delete
-              </button>
-            </div>
+        ))}
+        {filtered.length === 0 && (
+          <div className="text-center text-gray-500 py-12 bg-white border border-dashed border-gray-300 rounded-lg">
+            No posts yet. Click &ldquo;New Post&rdquo; to write your first journal entry.
           </div>
         )}
+        </div>
 
-        {viewMode === 'grid' ? (
-          <div className="p-6 grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {posts.map((post) => (
-              <div key={post.id} className="border-2 border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="relative">
-                  <input
-                    type="checkbox"
-                    checked={selectedPosts.includes(post.id)}
-                    onChange={() => handleSelectPost(post.id)}
-                    className="absolute top-3 left-3 w-5 h-5 text-blue-700 border-gray-300 rounded focus:ring-blue-500 cursor-pointer z-10"
-                  />
-                  <div className="aspect-video bg-gray-100 overflow-hidden">
-                    <img src={post.image} alt={post.title} className="w-full h-full object-cover" />
-                  </div>
-                  {post.featured && (
-                    <span className="absolute top-3 right-3 bg-amber-500 text-white px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap">
-                      Featured
-                    </span>
+      {editing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[92vh] overflow-y-auto">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white z-10">
+              <h3 className="text-lg font-semibold text-gray-900">{editing.id ? 'Edit Post' : 'New Post'}</h3>
+              <button onClick={() => setEditing(null)} className="text-gray-400 hover:text-gray-900">
+                <i className="ri-close-line text-xl"></i>
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5">
+              <Field
+                label="Title"
+                value={editing.title}
+                onChange={(v) => setEditing({
+                  ...editing,
+                  title: v,
+                  // Auto-fill slug only when slug is empty or matches previous slugified title
+                  slug: !editing.slug || editing.slug === slugify(editing.title) ? slugify(v) : editing.slug,
+                })}
+                placeholder="The FITAURA training notebook"
+              />
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <Field label="Slug" value={editing.slug} onChange={(v) => setEditing({ ...editing, slug: slugify(v) })} placeholder="the-fitaura-training-notebook" />
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Status</label>
+                  <select
+                    value={editing.status}
+                    onChange={(e) => setEditing({ ...editing, status: e.target.value as BlogStatus })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-sienna-500 focus:border-sienna-500 outline-none"
+                  >
+                    <option value="draft">Draft</option>
+                    <option value="published">Published</option>
+                    <option value="scheduled">Scheduled</option>
+                    <option value="archived">Archived</option>
+                  </select>
+            </div>
+          </div>
+
+              <Field label="Excerpt" textarea value={editing.excerpt} onChange={(v) => setEditing({ ...editing, excerpt: v })} placeholder="A short summary shown on the journal index." />
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Featured image</label>
+                <div className="flex items-center gap-4">
+                  {editing.featured_image && (
+                    // eslint-disable-next-line @next/next/no-img-element -- form preview
+                    <img src={editing.featured_image} alt="" className="w-24 h-16 object-cover rounded" />
                   )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    disabled={uploading}
+                    onChange={async (e) => {
+                      if (!e.target.files?.[0]) return;
+                      const url = await handleImageUpload(e.target.files[0]);
+                      if (url) setEditing({ ...editing, featured_image: url });
+                    }}
+                    className="text-sm"
+                  />
                 </div>
-                <div className="p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-semibold text-blue-700">{post.category}</span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${statusColors[post.status]}`}>
-                      {post.status}
-                    </span>
-                  </div>
-                  <h3 className="font-bold text-gray-900 mb-2 line-clamp-2">{post.title}</h3>
-                  <p className="text-sm text-gray-600 mb-3 line-clamp-2">{post.excerpt}</p>
-                  <div className="flex items-center justify-between text-sm text-gray-600 mb-4 pb-4 border-b border-gray-200">
-                    <span className="flex items-center">
-                      <i className="ri-eye-line mr-1"></i>
-                      {post.views}
-                    </span>
-                    <span className="flex items-center">
-                      <i className="ri-chat-3-line mr-1"></i>
-                      {post.comments}
-                    </span>
-                    <span className="whitespace-nowrap">{post.publishDate}</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Link
-                      href={`/admin/blog/${post.id}`}
-                      className="flex-1 bg-blue-700 hover:bg-blue-800 text-white py-2 rounded-lg text-sm font-medium text-center transition-colors whitespace-nowrap"
-                    >
-                      Edit Post
-                    </Link>
-                    <button className="w-9 h-9 flex items-center justify-center border-2 border-gray-300 text-gray-700 hover:border-blue-600 hover:text-blue-600 rounded-lg transition-colors">
-                      <i className="ri-eye-line"></i>
-                    </button>
-                  </div>
-                </div>
+                <input
+                  type="text"
+                  value={editing.featured_image ?? ''}
+                  placeholder="Or paste an image URL"
+                  onChange={(e) => setEditing({ ...editing, featured_image: e.target.value || null })}
+                  className="mt-2 w-full px-3 py-2 border border-gray-300 rounded text-sm"
+                />
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="py-4 px-6">
-                    <input
-                      type="checkbox"
-                      checked={selectedPosts.length === posts.length}
-                      onChange={handleSelectAll}
-                      className="w-4 h-4 text-blue-700 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
-                    />
-                  </th>
-                  <th className="text-left py-4 px-4 text-sm font-semibold text-gray-700">Post</th>
-                  <th className="text-left py-4 px-4 text-sm font-semibold text-gray-700">Author</th>
-                  <th className="text-left py-4 px-4 text-sm font-semibold text-gray-700">Category</th>
-                  <th className="text-left py-4 px-4 text-sm font-semibold text-gray-700">Views</th>
-                  <th className="text-left py-4 px-4 text-sm font-semibold text-gray-700">Comments</th>
-                  <th className="text-left py-4 px-4 text-sm font-semibold text-gray-700">Status</th>
-                  <th className="text-left py-4 px-4 text-sm font-semibold text-gray-700">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {posts.map((post) => (
-                  <tr key={post.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                    <td className="py-4 px-6">
-                      <input
-                        type="checkbox"
-                        checked={selectedPosts.includes(post.id)}
-                        onChange={() => handleSelectPost(post.id)}
-                        className="w-4 h-4 text-blue-700 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
-                      />
-                    </td>
-                    <td className="py-4 px-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-20 h-14 bg-gray-100 rounded-lg overflow-hidden">
-                          <img src={post.image} alt={post.title} className="w-full h-full object-cover" />
-                        </div>
-                        <div>
-                          <Link href={`/admin/blog/${post.id}`} className="font-semibold text-gray-900 hover:text-blue-700">
-                            {post.title}
-                          </Link>
-                          <p className="text-sm text-gray-500 mt-1">{post.publishDate}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-4 px-4 text-gray-700">{post.author}</td>
-                    <td className="py-4 px-4 text-gray-700">{post.category}</td>
-                    <td className="py-4 px-4 font-semibold text-gray-900">{post.views}</td>
-                    <td className="py-4 px-4 font-semibold text-gray-900">{post.comments}</td>
-                    <td className="py-4 px-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${statusColors[post.status]}`}>
-                        {post.status}
-                      </span>
-                    </td>
-                    <td className="py-4 px-4">
-                      <div className="flex items-center space-x-2">
-                        <Link
-                          href={`/admin/blog/${post.id}`}
-                          className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
-                        >
-                          <i className="ri-edit-line text-lg"></i>
-                        </Link>
-                        <button className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors">
-                          <i className="ri-eye-line text-lg"></i>
-                        </button>
-                        <button className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors">
-                          <i className="ri-delete-bin-line text-lg"></i>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
 
-        <div className="p-6 border-t border-gray-200 flex items-center justify-between">
-          <p className="text-gray-600">Showing {posts.length} posts</p>
-          <div className="flex items-center space-x-2">
-            <button className="w-10 h-10 flex items-center justify-center border-2 border-gray-300 rounded-lg hover:border-gray-400 transition-colors">
-              <i className="ri-arrow-left-s-line text-xl text-gray-600"></i>
-            </button>
-            <button className="w-10 h-10 flex items-center justify-center bg-blue-700 text-white rounded-lg font-semibold">1</button>
-            <button className="w-10 h-10 flex items-center justify-center border-2 border-gray-300 rounded-lg hover:border-gray-400 transition-colors">
-              <i className="ri-arrow-right-s-line text-xl text-gray-600"></i>
-            </button>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Content (HTML)</label>
+                <textarea
+                  rows={14}
+                  value={editing.content}
+                  onChange={(e) => setEditing({ ...editing, content: e.target.value })}
+                  placeholder="<p>Write your story…</p>"
+                  className="w-full px-3 py-2 border border-gray-300 rounded font-mono text-[13px] focus:ring-2 focus:ring-sienna-500 focus:border-sienna-500 outline-none"
+                />
+                <p className="text-xs text-gray-500 mt-1">HTML is sanitized before render — safe tags only.</p>
+          </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Tags (comma separated)</label>
+                    <input
+                  type="text"
+                  value={editing.tags.join(', ')}
+                  onChange={(e) => setEditing({ ...editing, tags: e.target.value.split(',').map((t) => t.trim()).filter(Boolean) })}
+                  placeholder="training, design, behind the brand"
+                  className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
+                />
+                        </div>
+
+              <details className="border border-gray-200 rounded-lg">
+                <summary className="px-4 py-3 cursor-pointer text-sm font-semibold text-gray-700">SEO (optional)</summary>
+                <div className="p-4 space-y-4 border-t border-gray-200">
+                  <Field label="SEO title" value={editing.seo_title} onChange={(v) => setEditing({ ...editing, seo_title: v })} placeholder="Custom title for search engines" />
+                  <Field label="SEO description" textarea value={editing.seo_description} onChange={(v) => setEditing({ ...editing, seo_description: v })} placeholder="Meta description (150-160 chars)" />
+                        </div>
+              </details>
+                      </div>
+
+            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3 sticky bottom-0 bg-white">
+              <button onClick={() => setEditing(null)} className="text-gray-600 hover:text-gray-900 px-4 py-2 text-sm font-medium">Cancel</button>
+              <button onClick={handleSave} disabled={saving} className="bg-sienna-500 hover:bg-sienna-600 disabled:opacity-50 text-white px-6 py-2.5 rounded-lg text-sm font-semibold transition-colors">
+                {saving ? 'Saving…' : editing.id ? 'Update Post' : 'Create Post'}
+                        </button>
+                      </div>
           </div>
         </div>
+      )}
       </div>
+  );
+}
+
+function Field({
+  label,
+  value,
+  onChange,
+  textarea,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  textarea?: boolean;
+  placeholder?: string;
+}) {
+  return (
+    <div>
+      <label className="block text-sm font-semibold text-gray-700 mb-1.5">{label}</label>
+      {textarea ? (
+        <textarea
+          rows={3}
+          value={value}
+          placeholder={placeholder}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-sienna-500 focus:border-sienna-500 outline-none"
+        />
+      ) : (
+        <input
+          type="text"
+          value={value}
+          placeholder={placeholder}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-sienna-500 focus:border-sienna-500 outline-none"
+        />
+      )}
     </div>
   );
 }

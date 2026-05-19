@@ -35,7 +35,7 @@ export async function testSmsAction(phone: string, message: string, authToken: s
             return { success: false, error: 'Invalid or too long message' };
         }
 
-        // Format phone number for Ghana
+        // Format phone number for Canada (+1) by default
         let cleaned = phone.replace(/\D/g, '');
         if (cleaned.startsWith('0')) {
             cleaned = '233' + cleaned.slice(1);
@@ -54,7 +54,7 @@ export async function testSmsAction(phone: string, message: string, authToken: s
             },
             body: JSON.stringify({
                 type: 1,
-                senderid: 'TIWAA',
+                senderid: 'STORE',
                 messages: [
                     {
                         recipient: recipient,

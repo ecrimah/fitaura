@@ -59,7 +59,12 @@ export default function CartPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <PageHero title="Shopping Cart" backgroundImage="/Whisk_a4071984faa45f6b45b4ac8f2119754ddr.jpeg" />
+      <PageHero
+        eyebrow="Your Selection"
+        title="Shopping Cart"
+        subtitle="Review your pieces, then continue to a secure FITAURA checkout."
+        backgroundImage="/brand/cart-hero.jpg"
+      />
       <div className="py-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         <CartCountdown />
@@ -73,7 +78,7 @@ export default function CartPage() {
               </div>
               <h2 className="text-3xl font-bold text-gray-900 mb-4">Your cart is empty</h2>
               <p className="text-gray-600 mb-8 text-lg">Looks like you&#39;t added anything to your cart yet</p>
-              <Link href="/shop" className="inline-block bg-gray-900 hover:bg-blue-700 text-white px-8 py-4 rounded-lg font-semibold transition-colors whitespace-nowrap">
+              <Link href="/shop" className="inline-block bg-sienna-500 hover:bg-sienna-600 text-white px-8 py-4 rounded-lg font-semibold transition-colors whitespace-nowrap">
                 Continue Shopping
               </Link>
             </div>
@@ -87,7 +92,7 @@ export default function CartPage() {
                     <div className="flex items-center justify-between mb-6">
                       <h2 className="text-2xl font-bold text-gray-900">Cart Items ({cartItems.length})</h2>
                       {savings > 0 && (
-                        <span className="text-blue-700 font-semibold">You save GH₵{savings.toFixed(2)}</span>
+                        <span className="text-sienna-500 font-semibold">You save ${savings.toFixed(2)}</span>
                       )}
                     </div>
 
@@ -100,7 +105,7 @@ export default function CartPage() {
 
                           <div className="flex-1">
                             <div className="flex justify-between mb-2">
-                              <Link href={`/product/${item.slug || item.id}`} className="text-lg font-semibold text-gray-900 hover:text-blue-700 transition-colors line-clamp-2">
+                              <Link href={`/product/${item.slug || item.id}`} className="text-lg font-semibold text-gray-900 hover:text-sienna-500 transition-colors line-clamp-2">
                                 {item.name}
                               </Link>
                               <button
@@ -114,12 +119,12 @@ export default function CartPage() {
                             <div className="text-sm text-gray-600 mb-3 space-y-1">
                               {item.variant && <p>Variant: {item.variant}</p>}
                               {/* Stock status assuming always available if in cart for now */}
-                              <p className="text-blue-600 font-medium">In Stock</p>
+                              <p className="text-sienna-500 font-medium">In Stock</p>
                             </div>
 
                             <div className="flex items-center justify-between flex-wrap gap-4">
                               <div className="flex items-baseline space-x-3">
-                                <span className="text-xl font-bold text-gray-900">GH₵{item.price.toFixed(2)}</span>
+                                <span className="text-xl font-bold text-gray-900">${item.price.toFixed(2)}</span>
                               </div>
 
                               <div className="flex items-center space-x-4">
@@ -164,7 +169,7 @@ export default function CartPage() {
                             {/*
                             <button
                               onClick={() => saveForLater(item.id)}
-                              className="mt-3 text-sm text-blue-700 hover:text-blue-900 font-medium whitespace-nowrap"
+                              className="mt-3 text-sm text-sienna-500 hover:text-ink-900 font-medium whitespace-nowrap"
                             >
                               Save for Later
                             </button>
@@ -186,7 +191,7 @@ export default function CartPage() {
                             </div>
                             <div className="flex-1">
                               <p className="font-semibold text-gray-900 mb-1">{item.name}</p>
-                              <p className="text-lg font-bold text-gray-900 mb-2">GH₵{item.price.toFixed(2)}</p>
+                              <p className="text-lg font-bold text-gray-900 mb-2">${item.price.toFixed(2)}</p>
                               {/* Move to cart disabled for now */}
                             </div>
                           </div>
@@ -203,21 +208,21 @@ export default function CartPage() {
                     <div className="space-y-4 mb-6">
                       <div className="flex justify-between text-gray-700">
                         <span>Subtotal</span>
-                        <span className="font-semibold">GH₵{subtotal.toFixed(2)}</span>
+                        <span className="font-semibold">${subtotal.toFixed(2)}</span>
                       </div>
 
                       {appliedCoupon && (
-                        <div className="flex justify-between text-blue-700">
+                        <div className="flex justify-between text-sienna-500">
                           <div className="flex items-center space-x-2">
                             <span>Coupon ({appliedCoupon.code})</span>
                           </div>
-                          <span className="font-semibold">-GH₵{couponDiscount.toFixed(2)}</span>
+                          <span className="font-semibold">-${couponDiscount.toFixed(2)}</span>
                         </div>
                       )}
 
                       <div className="flex justify-between text-gray-700">
                         <span>Shipping</span>
-                        <span className="font-semibold">{shipping === 0 ? 'FREE' : `GH₵${shipping.toFixed(2)}`}</span>
+                        <span className="font-semibold">{shipping === 0 ? 'FREE' : `$${shipping.toFixed(2)}`}</span>
                       </div>
 
                       {shipping > 0 && (
@@ -230,7 +235,7 @@ export default function CartPage() {
                     <div className="border-t border-gray-200 pt-4 mb-6">
                       <div className="flex justify-between text-xl font-bold text-gray-900">
                         <span>Total</span>
-                        <span>GH₵{total.toFixed(2)}</span>
+                        <span>${total.toFixed(2)}</span>
                       </div>
                     </div>
 
@@ -243,29 +248,29 @@ export default function CartPage() {
 
                     <Link
                       href="/checkout"
-                      className="block w-full bg-blue-700 hover:bg-blue-800 text-white py-4 rounded-lg font-semibold text-center transition-colors mt-6 mb-3 whitespace-nowrap"
+                      className="block w-full bg-sienna-500 hover:bg-sienna-600 text-white py-4 rounded-lg font-semibold text-center transition-colors mt-6 mb-3 whitespace-nowrap"
                     >
                       Proceed to Checkout
                     </Link>
 
                     <Link
                       href="/shop"
-                      className="block w-full text-center text-blue-700 hover:text-blue-900 font-semibold py-2 whitespace-nowrap"
+                      className="block w-full text-center text-sienna-500 hover:text-ink-900 font-semibold py-2 whitespace-nowrap"
                     >
                       Continue Shopping
                     </Link>
 
                     <div className="mt-6 pt-6 border-t border-gray-200 space-y-3">
                       <div className="flex items-center text-sm text-gray-600">
-                        <i className="ri-shield-check-line text-blue-700 mr-2"></i>
+                        <i className="ri-shield-check-line text-sienna-500 mr-2"></i>
                         <span>Secure checkout</span>
                       </div>
                       <div className="flex items-center text-sm text-gray-600">
-                        <i className="ri-arrow-left-right-line text-blue-700 mr-2"></i>
+                        <i className="ri-arrow-left-right-line text-sienna-500 mr-2"></i>
                         <span>30-day returns</span>
                       </div>
                       <div className="flex items-center text-sm text-gray-600">
-                        <i className="ri-customer-service-line text-blue-700 mr-2"></i>
+                        <i className="ri-customer-service-line text-sienna-500 mr-2"></i>
                         <span>24/7 support</span>
                       </div>
                     </div>

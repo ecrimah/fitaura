@@ -28,14 +28,15 @@ export default function PWASplash() {
   return (
     <div className="pwa-splash" aria-hidden="true">
       <div className="pwa-splash-logo mb-6">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/tiwa logo.png"
-          alt="TIWAA PERFUME STYLE HOUSE"
-          className="w-24 h-24 object-contain brightness-0 invert"
+          src="/icon-512.png?v=5"
+          alt="FITAURA"
+          className="w-24 h-24 object-contain"
         />
       </div>
-      <h1 className="text-white text-xl font-bold font-serif mb-2">TIWAA PERFUME STYLE HOUSE</h1>
-      <p className="text-blue-200 text-sm font-medium mb-8">Quality Products & Supplies</p>
+      <h1 className="text-ink-900 text-2xl font-display tracking-wide mb-2">FITAURA</h1>
+      <p className="text-ink-500 text-sm font-medium mb-8">Confidence In Motion</p>
       <div className="pwa-splash-dots flex gap-1.5">
         <span className="w-2 h-2 bg-white rounded-full" />
         <span className="w-2 h-2 bg-white rounded-full" />

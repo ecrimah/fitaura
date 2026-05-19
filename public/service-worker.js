@@ -1,5 +1,11 @@
-// TIWAA PERFUME STYLE HOUSE - Service Worker v2.2
-const CACHE_VERSION = 'tiwaa-v2.2';
+// Service Worker — FITAURA storefront
+// Every bump deletes prior caches on activate, evicting:
+//   - the previous owner's product photography at /hero-*.jpg paths
+//   - pre-debrand HTML with blue-* Tailwind classes
+//   - pre-link-fix Footer hrefs (/about#sustainability etc.)
+//   - v3.4: previous favicon.ico (old "F[I]T" wordmark) + all icon-*.png
+//   - v3.5: real FITAURA monogram logo now drives every icon / OG image
+const CACHE_VERSION = 'fitaura-v3.5';
 const STATIC_CACHE = `static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE = `dynamic-${CACHE_VERSION}`;
 const IMAGE_CACHE = `images-${CACHE_VERSION}`;
@@ -14,7 +20,9 @@ const STATIC_ASSETS = [
   '/account',
   '/categories',
   '/offline',
-  '/tiwa logo.png',
+  '/icon-192.png',
+  '/icon-512.png',
+  '/favicon-96x96.png',
 ];
 
 // Cache size limits
@@ -34,7 +42,7 @@ async function trimCache(cacheName, maxItems) {
 
 // Install: pre-cache static assets
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing TIWAA v2.2...');
+  console.log(`[SW] Installing ${CACHE_VERSION}...`);
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -49,22 +57,30 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Activate: clean old caches
+// Activate: clean old caches AND notify clients so they can hard-reload once
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating TIWAA v2.2...');
+  console.log(`[SW] Activating ${CACHE_VERSION}...`);
+  const KEEP = new Set([STATIC_CACHE, DYNAMIC_CACHE, IMAGE_CACHE, API_CACHE]);
   event.waitUntil(
     caches.keys()
-      .then((keys) => {
-        return Promise.all(
+      .then((keys) =>
+        Promise.all(
           keys
-            .filter((key) => key !== STATIC_CACHE && key !== DYNAMIC_CACHE && key !== IMAGE_CACHE && key !== API_CACHE)
+            .filter((key) => !KEEP.has(key))
             .map((key) => {
               console.log('[SW] Removing old cache:', key);
               return caches.delete(key);
-            })
-        );
-      })
+            }),
+        ),
+      )
       .then(() => self.clients.claim())
+      .then(() => self.clients.matchAll({ includeUncontrolled: true }))
+      .then((clients) => {
+        // Tell any open tabs that a new SW activated so they can refresh once.
+        clients.forEach((client) => {
+          client.postMessage({ type: 'SW_UPDATED', version: CACHE_VERSION });
+        });
+      }),
   );
 });
 
@@ -89,7 +105,7 @@ self.addEventListener('fetch', (event) => {
       fetch(request)
         .then((response) => response)
         .catch(() => {
-          const html = '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin – Connection required</title><style>body{font-family:system-ui,sans-serif;margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f8fafc;}.box{text-align:center;max-width:24rem;padding:2rem;}h1{font-size:1.5rem;color:#1e293b;margin-bottom:0.5rem;}p{color:#64748b;margin-bottom:1.5rem;}a{display:inline-block;background:#2563eb;color:#fff;padding:0.75rem 1.5rem;border-radius:0.5rem;text-decoration:none;font-weight:600;}a:hover{background:#1d4ed8;}</style></head><body><div class="box"><h1>Connection required</h1><p>Admin needs an internet connection. Check your network and try again.</p><a href="/admin">Try again</a></div></body></html>';
+          const html = '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin – Connection required</title><style>body{font-family:system-ui,sans-serif;margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#FBF7F1;}.box{text-align:center;max-width:24rem;padding:2rem;}h1{font-size:1.5rem;color:#26261F;margin-bottom:0.5rem;}p{color:#494945;margin-bottom:1.5rem;}a{display:inline-block;background:#D14F2B;color:#FBF7F1;padding:0.75rem 1.5rem;border-radius:0.25rem;text-decoration:none;font-weight:600;letter-spacing:0.05em;}a:hover{background:#B83F1E;}</style></head><body><div class="box"><h1>Connection required</h1><p>Admin needs an internet connection. Check your network and try again.</p><a href="/admin">Try again</a></div></body></html>';
           return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
         })
     );
@@ -97,7 +113,9 @@ self.addEventListener('fetch', (event) => {
   }
   if (url.pathname.startsWith('/admin')) return;
 
-  // Strategy: Images - Cache First (long-lived)
+  // Strategy: Images - Cache First, but bypass HTTP cache on first miss so the
+  // browser's HTTP cache (which may hold prior owners' photography under the
+  // same paths) cannot serve stale content into the SW cache.
   if (
     request.destination === 'image' ||
     url.pathname.match(/\.(png|jpg|jpeg|gif|webp|svg|ico)$/) ||
@@ -107,14 +125,16 @@ self.addEventListener('fetch', (event) => {
       caches.open(IMAGE_CACHE).then((cache) => {
         return cache.match(request).then((cached) => {
           if (cached) return cached;
-          return fetch(request).then((response) => {
+          // `cache: 'reload'` forces the network and bypasses the browser
+          // HTTP cache for this single fetch — critical for evicting any
+          // immutable-cached photography from previous deploys.
+          return fetch(request.url, { cache: 'reload', credentials: 'same-origin' }).then((response) => {
             if (response.ok) {
               cache.put(request, response.clone());
               trimCache(IMAGE_CACHE, IMAGE_CACHE_LIMIT);
             }
             return response;
           }).catch(() => {
-            // Return a placeholder for failed images
             return new Response(
               '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect fill="#f3f4f6" width="200" height="200"/><text fill="#9ca3af" font-family="sans-serif" font-size="14" text-anchor="middle" x="100" y="105">Image unavailable</text></svg>',
               { headers: { 'Content-Type': 'image/svg+xml' } }
@@ -223,9 +243,9 @@ self.addEventListener('push', (event) => {
 
   const data = event.data.json();
   const options = {
-    body: data.body || 'New update from TIWAA PERFUME STYLE HOUSE',
-    icon: '/tiwa logo.png',
-    badge: '/tiwa logo.png',
+    body: data.body || 'New update',
+    icon: '/icon-192.png',
+    badge: '/favicon-96x96.png',
     vibrate: [100, 50, 100],
     data: {
       url: data.url || '/',
@@ -239,7 +259,7 @@ self.addEventListener('push', (event) => {
 
   event.waitUntil(
     self.registration.showNotification(
-      data.title || 'TIWAA PERFUME STYLE HOUSE',
+      data.title || 'Notification',
       options
     )
   );

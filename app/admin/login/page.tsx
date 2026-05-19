@@ -52,13 +52,20 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-gray-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-cream-100 via-white to-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link href="/" className="inline-block">
-            <img src="/tiwa logo.png" alt="TIWAA PERFUME STYLE HOUSE" className="h-12 w-auto mx-auto" />
+            {/* eslint-disable-next-line @next/next/no-img-element -- static brand mark, no layout shift */}
+            <img
+              src="/icon-192.png?v=5"
+              alt="FITAURA"
+              width={64}
+              height={64}
+              className="h-16 w-16 mx-auto rounded-xl shadow-md ring-1 ring-black/5"
+            />
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900 mt-6 mb-2">Admin Login</h1>
+          <h1 className="text-3xl font-display tracking-tight text-ink-900 mt-6 mb-2">Admin Login</h1>
           <p className="text-gray-600">Sign in to access the admin dashboard</p>
         </div>
 
@@ -84,8 +91,8 @@ export default function AdminLoginPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="tiwaperfumestyle@gmail.com"
+                  className="w-full pl-12 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-sienna-500 focus:border-sienna-500"
+                  placeholder="admin@example.com"
                   required
                 />
               </div>
@@ -101,7 +108,7 @@ export default function AdminLoginPage() {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-12 pr-12 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full pl-12 pr-12 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-sienna-500 focus:border-sienna-500"
                   placeholder="Enter your password"
                   required
                 />
@@ -118,7 +125,7 @@ export default function AdminLoginPage() {
             <button
               type="submit"
               disabled={isLoading || verifying}
-              className="w-full bg-blue-700 hover:bg-blue-800 text-white py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+              className="w-full bg-sienna-500 hover:bg-sienna-600 text-white py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
             >
               {isLoading || verifying ? (
                 <span className="flex items-center justify-center space-x-2">
@@ -135,7 +142,7 @@ export default function AdminLoginPage() {
         </div>
 
         <div className="mt-6 text-center">
-          <Link href="/" className="text-sm text-gray-600 hover:text-blue-700 transition-colors whitespace-nowrap">
+          <Link href="/" className="text-sm text-gray-600 hover:text-sienna-500 transition-colors whitespace-nowrap">
             <i className="ri-arrow-left-line mr-2"></i>
             Back to Store
           </Link>

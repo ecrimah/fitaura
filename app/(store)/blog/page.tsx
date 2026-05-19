@@ -1,255 +1,428 @@
 import Link from 'next/link';
+import Image from 'next/image';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import JournalNewsletter from '@/components/JournalNewsletter';
 
-export default function BlogPage() {
-  const featuredPost = {
-    id: '1',
-    title: 'The Ultimate Guide to Online Shopping in Ghana',
-    excerpt: 'Everything you need to know about safe, convenient online shopping in Ghana. From payment methods to delivery options, we cover it all.',
-    image: 'https://readdy.ai/api/search-image?query=Modern%20African%20woman%20shopping%20online%20on%20laptop%20in%20bright%20contemporary%20home%20office%20coffee%20cup%20plants%20natural%20light%20relaxed%20lifestyle%20photography%20minimal%20clean%20background&width=1200&height=600&seq=blog1&orientation=landscape',
-    category: 'Shopping Tips',
-    date: 'December 15, 2024',
-    readTime: '8 min read',
-    author: 'Ama Osei'
-  };
+export const revalidate = 60;
 
-  const posts = [
-    {
-      id: '2',
-      title: '10 Must-Have Products for Your Home This Season',
-      excerpt: 'Discover the trending products that will elevate your living space and make your home more comfortable and stylish.',
-      image: 'https://readdy.ai/api/search-image?query=Beautiful%20modern%20African%20home%20interior%20with%20stylish%20furniture%20decor%20items%20plants%20bright%20natural%20lighting%20contemporary%20design%20magazine%20quality%20photography&width=800&height=500&seq=blog2&orientation=landscape',
-      category: 'Home & Living',
-      date: 'December 12, 2024',
-      readTime: '6 min read',
-      author: 'Yaw Darko'
-    },
-    {
-      id: '3',
-      title: 'How to Choose Quality Products: A Buyer\'s Guide',
-      excerpt: 'Learn the key indicators of quality products and how to make informed purchasing decisions that offer the best value for your money.',
-      image: 'https://readdy.ai/api/search-image?query=Person%20examining%20product%20quality%20checking%20labels%20and%20details%20in%20bright%20retail%20setting%20closeup%20hands%20inspecting%20merchandise%20professional%20photography%20clean%20background&width=800&height=500&seq=blog3&orientation=landscape',
-      category: 'Buying Guide',
-      date: 'December 10, 2024',
-      readTime: '7 min read',
-      author: 'Kwame Mensah'
-    },
-    {
-      id: '1',
-      title: 'The Ultimate Guide to Online Shopping in Ghana',
-      excerpt: 'Everything you need to know about safe, convenient online shopping in Ghana. From payment methods to delivery options.',
-      image: 'https://readdy.ai/api/search-image?query=Modern%20African%20woman%20shopping%20online%20on%20laptop%20in%20bright%20contemporary%20home%20office%20coffee%20cup%20plants%20natural%20light%20relaxed%20lifestyle%20photography%20minimal%20clean%20background&width=800&height=500&seq=blog1b&orientation=landscape',
-      category: 'Shopping Tips',
-      date: 'December 15, 2024',
-      readTime: '8 min read',
-      author: 'Ama Osei'
-    }
-  ];
+interface PublicBlogPost {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string;
+  featured_image: string | null;
+  tags: string[] | null;
+  published_at: string | null;
+  created_at: string;
+  reading_minutes?: number | null;
+}
 
-  const categories = [
-    { name: 'All Posts', count: 12, icon: 'ri-article-line' },
-    { name: 'Shopping Tips', count: 5, icon: 'ri-shopping-bag-line' },
-    { name: 'Product Reviews', count: 4, icon: 'ri-star-line' },
-    { name: 'Home & Living', count: 3, icon: 'ri-home-line' },
-    { name: 'Buying Guide', count: 6, icon: 'ri-guide-line' },
-    { name: 'News', count: 2, icon: 'ri-newspaper-line' }
-  ];
+async function getPosts(): Promise<PublicBlogPost[]> {
+  if (!isSupabaseConfigured) return [];
+  try {
+    const { data, error } = await supabase
+      .from('blog_posts')
+      .select('id, slug, title, excerpt, featured_image, tags, published_at, created_at')
+      .eq('status', 'published')
+      .order('published_at', { ascending: false, nullsFirst: false });
+    if (error || !data) return [];
+    return data as PublicBlogPost[];
+  } catch {
+    return [];
+  }
+}
+
+function formatDate(value: string | null): string {
+  if (!value) return '';
+  return new Date(value).toLocaleDateString('en-CA', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+function readTime(excerpt: string | null): string {
+  const words = (excerpt ?? '').split(/\s+/).filter(Boolean).length;
+  const minutes = Math.max(2, Math.ceil(words / 80));
+  return `${minutes} min read`;
+}
+
+export default async function JournalPage() {
+  const posts = await getPosts();
+  const featured = posts[0];
+  const aboveFold = posts.slice(1, 4);
+  const archive = posts.slice(4);
+
+  // Collect distinct tags for the topic rail. Cap at 8 for visual balance.
+  const allTags = Array.from(
+    new Set(posts.flatMap((p) => p.tags ?? []).filter(Boolean) as string[]),
+  ).slice(0, 8);
+
+  // Year of the first published post — used in the masthead "Vol." line.
+  const firstPostYear = posts.length
+    ? new Date(posts[posts.length - 1].published_at ?? posts[posts.length - 1].created_at).getFullYear()
+    : new Date().getFullYear();
+  const currentYear = new Date().getFullYear();
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="bg-gradient-to-br from-blue-50 via-white to-amber-50 py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-5xl font-bold text-gray-900 mb-6">Our Blog</h1>
-            <p className="text-xl text-gray-600 leading-relaxed">
-              Shopping tips, product guides, and the latest trends to help you make smarter purchasing decisions.
-            </p>
+    <main className="bg-cream-50 text-ink-900">
+
+      {/* ─────────────────────────────────────────────────────────────
+          1 · MASTHEAD
+          Editorial hero band — matches the Shop & Collections hero
+          rhythm: dark `bg-ink-900` surface, full-bleed image with a
+          gradient overlay, condensed `py-16 lg:py-24` height.
+          ─────────────────────────────────────────────────────────── */}
+      <section className="relative bg-ink-900 text-cream-50 overflow-hidden">
+        <div className="absolute inset-0 opacity-40">
+          <Image
+            src="/brand/hero-2.jpg"
+            alt=""
+            aria-hidden
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover object-center"
+          />
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-r from-ink-900 via-ink-900/85 to-ink-900/40" />
+
+        <div className="relative max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 py-16 lg:py-24">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-end">
+            <div className="lg:col-span-8">
+              <div className="flex items-center gap-3 mb-6 text-cream-100/80">
+                <span className="text-[11px] font-semibold tracking-[0.28em] uppercase text-sienna-500">
+                  The FITAURA Journal
+                </span>
+                <span className="h-px w-12 bg-cream-100/40" />
+                <span className="text-[11px] tracking-[0.22em] uppercase">
+                  {currentYear === firstPostYear ? `Vol. ${currentYear}` : `${firstPostYear} → ${currentYear}`}
+                </span>
+              </div>
+              <h1 className="font-display text-[36px] sm:text-[52px] lg:text-[68px] xl:text-[80px] leading-[0.92] tracking-tight">
+                <span className="block">STORIES</span>
+                <span className="block text-sienna-500">IN MOTION.</span>
+              </h1>
+              <p className="mt-6 max-w-lg text-cream-100/80 text-sm lg:text-base leading-relaxed">
+                Training notes, design diaries, styling inspiration and conversations
+                from the FITAURA studio in Calgary.
+              </p>
+            </div>
+
+            <aside className="lg:col-span-4 lg:pl-10 lg:border-l lg:border-cream-100/15">
+              <dl className="grid grid-cols-3 gap-y-5 gap-x-4 text-cream-100/80">
+                <div>
+                  <dt className="text-[10px] tracking-[0.28em] uppercase text-cream-100/60 mb-1">Stories</dt>
+                  <dd className="font-display text-2xl text-cream-50">
+                    {String(posts.length).padStart(2, '0')}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-[10px] tracking-[0.28em] uppercase text-cream-100/60 mb-1">Topics</dt>
+                  <dd className="font-display text-2xl text-cream-50">
+                    {String(allTags.length).padStart(2, '0')}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-[10px] tracking-[0.28em] uppercase text-cream-100/60 mb-1">Issue</dt>
+                  <dd className="font-display text-2xl text-cream-50">
+                    {String(currentYear).slice(-2)}
+                  </dd>
+                </div>
+              </dl>
+            </aside>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <Link href={`/blog/${featuredPost.id}`} className="block mb-16 hover:opacity-90 transition-opacity cursor-pointer">
-          <div className="bg-white border border-gray-200 rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow">
-            <div className="grid md:grid-cols-2 gap-0">
-              <div className="relative h-96 md:h-auto">
-                <img
-                  src={featuredPost.image}
-                  alt={featuredPost.title}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute top-6 left-6">
-                  <span className="bg-blue-700 text-white px-4 py-2 rounded-full text-sm font-medium">
-                    Featured
-                  </span>
-                </div>
-              </div>
-              <div className="p-12 flex flex-col justify-center">
-                <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
-                  <span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full font-medium">
-                    {featuredPost.category}
-                  </span>
-                  <span>{featuredPost.date}</span>
-                  <span className="flex items-center gap-1">
-                    <i className="ri-time-line"></i>
-                    {featuredPost.readTime}
-                  </span>
-                </div>
-                <h2 className="text-4xl font-bold text-gray-900 mb-4 leading-tight">
-                  {featuredPost.title}
-                </h2>
-                <p className="text-gray-600 text-lg leading-relaxed mb-6">
-                  {featuredPost.excerpt}
-                </p>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                    <i className="ri-user-line text-blue-700"></i>
-                  </div>
-                  <span className="text-gray-900 font-medium">{featuredPost.author}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </Link>
-
-        <div className="grid lg:grid-cols-4 gap-8">
-          <div className="lg:col-span-3">
-            <h2 className="text-3xl font-bold text-gray-900 mb-8">Latest Articles</h2>
-            <div className="grid md:grid-cols-2 gap-8">
-              {posts.map((post) => (
-                <Link
-                  key={post.id}
-                  href={`/blog/${post.id}`}
-                  className="bg-white border border-gray-200 rounded-2xl overflow-hidden hover:shadow-lg transition-all cursor-pointer"
-                >
-                  <div className="relative h-64">
-                    <img
-                      src={post.image}
-                      alt={post.title}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="p-6">
-                    <div className="flex items-center gap-3 text-sm text-gray-500 mb-3">
-                      <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full font-medium text-xs">
-                        {post.category}
-                      </span>
-                      <span className="text-xs">{post.date}</span>
-                    </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-3 leading-tight">
-                      {post.title}
-                    </h3>
-                    <p className="text-gray-600 mb-4 leading-relaxed text-sm">
-                      {post.excerpt}
-                    </p>
-                    <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                          <i className="ri-user-line text-gray-600 text-sm"></i>
-                        </div>
-                        <span className="text-sm text-gray-900 font-medium">{post.author}</span>
-                      </div>
-                      <span className="text-xs text-gray-500 flex items-center gap-1">
-                        <i className="ri-time-line"></i>
-                        {post.readTime}
-                      </span>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-
-            <div className="mt-12 flex justify-center">
-              <nav className="flex items-center gap-2">
-                <button className="w-10 h-10 flex items-center justify-center border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
-                  <i className="ri-arrow-left-s-line text-gray-600"></i>
-                </button>
-                <button className="w-10 h-10 flex items-center justify-center bg-blue-700 text-white rounded-lg cursor-pointer">
-                  1
-                </button>
-                <button className="w-10 h-10 flex items-center justify-center border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
-                  2
-                </button>
-                <button className="w-10 h-10 flex items-center justify-center border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
-                  3
-                </button>
-                <button className="w-10 h-10 flex items-center justify-center border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
-                  <i className="ri-arrow-right-s-line text-gray-600"></i>
-                </button>
-              </nav>
-            </div>
-          </div>
-
-          <div>
-            <div className="bg-gray-50 rounded-2xl p-6 mb-8 sticky top-24">
-              <h3 className="text-xl font-bold text-gray-900 mb-6">Categories</h3>
-              <div className="space-y-2">
-                {categories.map((category, index) => (
-                  <button
-                    key={index}
-                    className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-white transition-colors cursor-pointer"
-                  >
-                    <div className="flex items-center gap-3">
-                      <i className={`${category.icon} text-blue-700`}></i>
-                      <span className="text-gray-900 font-medium">{category.name}</span>
-                    </div>
-                    <span className="text-sm text-gray-500">{category.count}</span>
-                  </button>
-                ))}
-              </div>
-
-              <div className="mt-8 pt-8 border-t border-gray-200">
-                <h3 className="text-xl font-bold text-gray-900 mb-6">Newsletter</h3>
-                <p className="text-gray-600 text-sm mb-4 leading-relaxed">
-                  Get the latest articles and shopping tips delivered to your inbox weekly.
-                </p>
-                <form className="space-y-3">
-                  <input
-                    type="email"
-                    placeholder="Your email address"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                  />
-                  <button
-                    type="submit"
-                    className="w-full bg-blue-700 text-white py-3 rounded-xl font-medium hover:bg-blue-800 transition-colors whitespace-nowrap"
-                  >
-                    Subscribe
-                  </button>
-                </form>
-              </div>
-
-              <div className="mt-8 pt-8 border-t border-gray-200">
-                <h3 className="text-xl font-bold text-gray-900 mb-6">Popular Tags</h3>
-                <div className="flex flex-wrap gap-2">
-                  {['Shopping', 'Quality', 'Reviews', 'Ghana', 'Delivery', 'Tips', 'Home', 'Style'].map((tag, index) => (
-                    <button
-                      key={index}
-                      className="px-4 py-2 bg-white border border-gray-200 rounded-full text-sm text-gray-700 hover:border-blue-500 hover:text-blue-700 transition-colors cursor-pointer whitespace-nowrap"
-                    >
-                      #{tag}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-gradient-to-br from-blue-700 to-blue-900 py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl font-bold text-white mb-4">Ready to Start Shopping?</h2>
-          <p className="text-xl text-blue-100 mb-8 leading-relaxed">
-            Browse our range of perfumes and fragrances
+      {posts.length === 0 ? (
+        /* ── Empty state ── */
+        <section className="max-w-[900px] mx-auto px-4 sm:px-6 lg:px-10 py-24 text-center">
+          <span className="inline-flex w-14 h-14 items-center justify-center rounded-full bg-cream-200 text-ink-500 mb-6">
+            <i className="ri-article-line text-2xl" aria-hidden></i>
+          </span>
+          <h2 className="font-display text-3xl mb-3">No journal entries yet</h2>
+          <p className="text-ink-500 max-w-md mx-auto">
+            We&rsquo;re working on stories from the studio. Check back soon — or
+            follow along on Instagram.
           </p>
           <Link
             href="/shop"
-            className="inline-flex items-center gap-2 bg-white text-blue-700 px-8 py-4 rounded-full font-medium hover:bg-blue-50 transition-colors whitespace-nowrap"
+            className="mt-8 inline-flex items-center bg-sienna-500 hover:bg-sienna-600 text-cream-50 px-7 py-3.5 text-[11px] font-semibold tracking-[0.24em] uppercase transition-colors duration-300"
           >
-            Explore Products
-            <i className="ri-arrow-right-line"></i>
+            Shop The Edit
+          </Link>
+        </section>
+      ) : (
+        <>
+
+          {/* ─────────────────────────────────────────────────────────
+              2 · TOPIC RAIL
+              Horizontal scrolling chip nav — uses real tag data when
+              available, links to /blog/tag/<slug> (graceful fallback).
+              ─────────────────────────────────────────────────────── */}
+          {allTags.length > 0 && (
+            <section className="bg-cream-50 border-b border-cream-200">
+              <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 py-6">
+                <div className="flex items-center gap-3 overflow-x-auto pb-1 -mx-1 px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  <span className="text-[10px] tracking-[0.28em] uppercase text-ink-500 flex-shrink-0 mr-3">
+                    Read by topic /
+                  </span>
+                  <span className="inline-flex items-center bg-ink-900 text-cream-50 px-4 py-2 text-[10px] tracking-[0.24em] uppercase font-semibold flex-shrink-0">
+                    All Stories
+                  </span>
+                  {allTags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center bg-cream-100 hover:bg-cream-200 border border-cream-200 text-ink-700 px-4 py-2 text-[10px] tracking-[0.24em] uppercase font-semibold flex-shrink-0 transition-colors cursor-default"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* ─────────────────────────────────────────────────────────
+              3 · COVER STORY
+              Full-bleed dark editorial frame for the most recent post.
+              Treats the post as a magazine cover, not a card.
+              ─────────────────────────────────────────────────────── */}
+          {featured && (
+            <section className="bg-ink-900 text-cream-50">
+              <Link
+                href={`/blog/${featured.slug}`}
+                className="group block relative overflow-hidden"
+              >
+                <div className="grid grid-cols-1 lg:grid-cols-12 lg:items-stretch">
+                  {/* Image */}
+                  <div className="lg:col-span-7 relative aspect-[4/3] sm:aspect-[16/10] lg:aspect-auto lg:min-h-[640px] bg-ink-700 overflow-hidden">
+                    {featured.featured_image && (
+                      <Image
+                        src={featured.featured_image}
+                        alt={featured.title}
+                        fill
+                        sizes="(max-width: 1024px) 100vw, 58vw"
+                        priority
+                        className="object-cover transition-transform duration-[1400ms] ease-out group-hover:scale-[1.03]"
+                      />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-tr from-ink-900/60 via-transparent to-transparent" />
+                    <span className="absolute top-5 left-5 bg-sienna-500 text-cream-50 px-3.5 py-1.5 text-[10px] font-semibold tracking-[0.24em] uppercase">
+                      Cover Story · No. 01
+                    </span>
+                  </div>
+
+                  {/* Text */}
+                  <div className="lg:col-span-5 p-8 sm:p-12 lg:p-16 flex flex-col justify-center">
+                    <div className="flex items-center gap-3 text-[11px] tracking-[0.22em] uppercase text-cream-100/70 mb-6">
+                      {featured.tags?.[0] && (
+                        <span className="text-sienna-500 font-semibold">{featured.tags[0]}</span>
+                      )}
+                      <span>{formatDate(featured.published_at ?? featured.created_at)}</span>
+                      <span>{readTime(featured.excerpt)}</span>
+                    </div>
+                    <h2 className="font-display text-[36px] sm:text-[48px] lg:text-[60px] leading-[0.95] tracking-tight group-hover:text-sienna-500 transition-colors duration-300">
+                      {featured.title}
+                    </h2>
+                    {featured.excerpt && (
+                      <p className="mt-6 text-cream-100/80 leading-relaxed text-base lg:text-[17px] max-w-md">
+                        {featured.excerpt}
+                      </p>
+                    )}
+                    <span className="mt-9 inline-flex items-center gap-2 text-[11px] font-semibold tracking-[0.24em] uppercase text-cream-50 group-hover:text-sienna-500 transition-colors">
+                      Read The Cover
+                      <i className="ri-arrow-right-line transition-transform duration-300 group-hover:translate-x-1" aria-hidden></i>
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            </section>
+          )}
+
+          {/* ─────────────────────────────────────────────────────────
+              4 · THE EDIT
+              The next three posts get the "above the fold" treatment —
+              same scale, equal weight, magazine three-up.
+              ─────────────────────────────────────────────────────── */}
+          {aboveFold.length > 0 && (
+            <section className="bg-cream-50">
+              <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 py-20 lg:py-28">
+                <div className="flex items-end justify-between flex-wrap gap-6 mb-12 lg:mb-16">
+                  <div>
+                    <span className="eyebrow mb-3 block">This week</span>
+                    <h3 className="font-display text-[32px] sm:text-[44px] lg:text-[52px] leading-[0.95] tracking-tight">
+                      THE EDIT.
+                    </h3>
+                  </div>
+                  <Link
+                    href="/shop?sort=newest"
+                    className="inline-flex items-center gap-2 text-ink-900 text-[11px] font-semibold tracking-[0.24em] uppercase hover:text-sienna-500 transition-colors"
+                  >
+                    Shop Latest Drop <i className="ri-arrow-right-line" aria-hidden></i>
+                  </Link>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 lg:gap-12">
+                  {aboveFold.map((post, idx) => (
+                    <Link
+                      key={post.id}
+                      href={`/blog/${post.slug}`}
+                      className="group block"
+                    >
+                      <div className="relative aspect-[4/5] bg-cream-100 overflow-hidden mb-6">
+                        {post.featured_image && (
+                          <Image
+                            src={post.featured_image}
+                            alt={post.title}
+                            fill
+                            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                            className="object-cover transition-transform duration-[1200ms] ease-out group-hover:scale-[1.04]"
+                          />
+                        )}
+                        <span className="absolute top-4 left-4 bg-cream-50/95 text-ink-900 px-3 py-1.5 text-[10px] tracking-[0.24em] uppercase font-semibold">
+                          {String(idx + 2).padStart(2, '0')}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 text-[10px] tracking-[0.22em] uppercase text-ink-500 mb-3">
+                        {post.tags?.[0] && (
+                          <span className="text-sienna-500 font-semibold">{post.tags[0]}</span>
+                        )}
+                        <span>{formatDate(post.published_at ?? post.created_at)}</span>
+                        <span>{readTime(post.excerpt)}</span>
+                      </div>
+                      <h4 className="font-display text-[24px] sm:text-[28px] lg:text-[30px] leading-[1.05] tracking-tight mb-3 group-hover:text-sienna-500 transition-colors duration-300">
+                        {post.title}
+                      </h4>
+                      {post.excerpt && (
+                        <p className="text-ink-500 text-[15px] leading-relaxed line-clamp-3">
+                          {post.excerpt}
+                        </p>
+                      )}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* ─────────────────────────────────────────────────────────
+              5 · THE ARCHIVE
+              Everything else — denser editorial list. Image + title +
+              tag/date in a horizontal layout. Reads like a contents
+              page in the back of a magazine.
+              ─────────────────────────────────────────────────────── */}
+          {archive.length > 0 && (
+            <section className="bg-cream-100 border-t border-cream-200">
+              <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 py-20 lg:py-28">
+                <div className="flex items-end justify-between flex-wrap gap-6 mb-12 lg:mb-14">
+                  <div>
+                    <span className="eyebrow mb-3 block">Read again</span>
+                    <h3 className="font-display text-[32px] sm:text-[44px] lg:text-[52px] leading-[0.95] tracking-tight">
+                      THE ARCHIVE.
+                    </h3>
+                  </div>
+                  <span className="text-[11px] tracking-[0.22em] uppercase text-ink-500">
+                    {String(archive.length).padStart(2, '0')} more stories
+                  </span>
+                </div>
+
+                <ul className="divide-y divide-cream-200">
+                  {archive.map((post, idx) => (
+                    <li key={post.id}>
+                      <Link
+                        href={`/blog/${post.slug}`}
+                        className="group grid grid-cols-12 gap-4 lg:gap-8 items-center py-6 lg:py-7"
+                      >
+                        <span className="col-span-2 sm:col-span-1 font-display text-2xl lg:text-3xl text-ink-300 group-hover:text-sienna-500 transition-colors">
+                          {String(idx + aboveFold.length + 2).padStart(2, '0')}
+                        </span>
+
+                        <div className="col-span-3 sm:col-span-2 relative aspect-square bg-cream-200 overflow-hidden">
+                          {post.featured_image && (
+                            <Image
+                              src={post.featured_image}
+                              alt={post.title}
+                              fill
+                              sizes="(max-width: 640px) 25vw, 12vw"
+                              className="object-cover transition-transform duration-[1200ms] ease-out group-hover:scale-105"
+                            />
+                          )}
+                        </div>
+
+                        <div className="col-span-7 sm:col-span-7">
+                          <div className="flex items-center gap-3 text-[10px] tracking-[0.22em] uppercase text-ink-500 mb-2">
+                            {post.tags?.[0] && (
+                              <span className="text-sienna-500 font-semibold">{post.tags[0]}</span>
+                            )}
+                            <span>{formatDate(post.published_at ?? post.created_at)}</span>
+                          </div>
+                          <h4 className="font-display text-lg sm:text-2xl leading-snug tracking-tight group-hover:text-sienna-500 transition-colors duration-300 line-clamp-2">
+                            {post.title}
+                          </h4>
+                        </div>
+
+                        <div className="hidden sm:flex col-span-2 justify-end text-ink-700 group-hover:text-sienna-500 transition-colors">
+                          <i className="ri-arrow-right-line text-2xl transition-transform duration-300 group-hover:translate-x-1" aria-hidden></i>
+                        </div>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </section>
+          )}
+        </>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────
+          6 · NEWSLETTER / STUDIO LETTERS
+          Branded ink-900 band — matches the homepage's dark CTA
+          rhythm. Visual-only on the storefront for now; wiring up
+          to a Resend list is a backend follow-up.
+          ─────────────────────────────────────────────────────────── */}
+      <section className="bg-ink-900 text-cream-50">
+        <div className="max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-10 py-12 lg:py-16">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            <div className="lg:col-span-7">
+              <span className="text-[10px] tracking-[0.28em] uppercase text-sienna-500 font-semibold mb-3 block">
+                Studio Letters
+              </span>
+              <h2 className="font-display text-[26px] sm:text-[34px] lg:text-[42px] leading-[0.95] tracking-tight">
+                <span className="block">FROM THE STUDIO</span>
+                <span className="block text-sienna-500">TO YOUR INBOX.</span>
+              </h2>
+              <p className="mt-4 text-cream-100/70 leading-relaxed text-[13px] lg:text-sm max-w-md">
+                A short letter from FITAURA every other Sunday — new drops, studio
+                notes, and the occasional playlist. No noise.
+              </p>
+            </div>
+
+            <JournalNewsletter />
+          </div>
+        </div>
+      </section>
+
+      {/* ─────────────────────────────────────────────────────────────
+          7 · SHOP CTA
+          Final pivot back to commerce. Mirrors the About page closer.
+          ─────────────────────────────────────────────────────────── */}
+      <section className="bg-cream-50">
+        <div className="max-w-[1000px] mx-auto px-4 sm:px-6 lg:px-10 py-20 lg:py-24 text-center">
+          <span className="eyebrow text-sienna-500 mb-5 block">Shop The Collection</span>
+          <h2 className="font-display text-[40px] sm:text-[54px] lg:text-[64px] leading-[0.95] tracking-tight mb-8 text-ink-900">
+            <span className="block">READ. WEAR.</span>
+            <span className="block text-sienna-500">REPEAT.</span>
+          </h2>
+          <Link
+            href="/shop"
+            className="inline-flex items-center gap-2 bg-ink-900 hover:bg-sienna-500 text-cream-50 px-9 py-4 text-[11px] font-semibold tracking-[0.24em] uppercase transition-colors"
+          >
+            Explore Products <i className="ri-arrow-right-line" aria-hidden></i>
           </Link>
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }

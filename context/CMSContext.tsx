@@ -1,7 +1,7 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 interface SiteSettings {
     site_name: string;
@@ -34,7 +34,7 @@ interface CMSContent {
     image_url: string | null;
     button_text: string | null;
     button_url: string | null;
-    metadata: Record<string, any>;
+    metadata: Record<string, unknown>;
     is_active: boolean;
 }
 
@@ -66,24 +66,26 @@ interface CMSContextType {
     refreshCMS: () => Promise<void>;
 }
 
+// FITAURA brand defaults — used as fallback when Supabase isn't reachable yet.
+// Real values are loaded from `site_settings` on mount and override these.
 const defaultSettings: SiteSettings = {
-    site_name: 'TIWAA PERFUME STYLE HOUSE',
-    site_tagline: 'I sell perfumes — Wholesale and retail.',
-    site_logo: '/tiwa logo.png',
-    contact_email: 'tiwaperfumestyle@gmail.com',
-    contact_phone: '0545010949',
-    contact_whatsapp: '0554169992',
-    contact_address: 'Satellite, Accra',
+    site_name: 'FITAURA',
+    site_tagline: 'Modern lifestyle clothing — gymwear, athleisure and fashion-forward apparel built to empower confidence and comfort.',
+    site_logo: '/fitaura-logo.png',
+    contact_email: 'hello@shopfitaura.com',
+    contact_phone: '+1 (587) 432-6761',
+    contact_whatsapp: '+15874326761',
+    contact_address: 'Calgary, Alberta, Canada',
     social_facebook: '',
-    social_instagram: '',
+    social_instagram: 'https://instagram.com/fitaura.ca',
     social_twitter: '',
     social_tiktok: '',
     social_snapchat: '',
     social_youtube: '',
-    primary_color: '#059669',
-    secondary_color: '#0D9488',
-    currency: 'GHS',
-    currency_symbol: 'GH₵',
+    primary_color: '#D14F2B',
+    secondary_color: '#FBF7F1',
+    currency: 'CAD',
+    currency_symbol: '$',
 };
 
 const CMSContext = createContext<CMSContextType>({
@@ -97,36 +99,72 @@ const CMSContext = createContext<CMSContextType>({
     refreshCMS: async () => { },
 });
 
+// Coerce the jsonb `value` column into a string for the SiteSettings record.
+// Supports the common shapes: bare string, { value: string }, number, boolean, null.
+function coerceSettingValue(value: unknown): string {
+    if (value == null) return '';
+    if (typeof value === 'string') return value;
+    if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+    if (typeof value === 'object') {
+        const v = value as Record<string, unknown>;
+        if (typeof v.value === 'string') return v.value;
+        return JSON.stringify(value);
+    }
+    return '';
+}
+
 export function CMSProvider({ children }: { children: ReactNode }) {
-    const [settings, setSettings] = useState<SiteSettings>({
-        site_name: 'TIWAA PERFUME STYLE HOUSE',
-        site_tagline: 'I sell perfumes — Wholesale and retail.',
-        site_logo: '/tiwa logo.png',
-        contact_email: 'tiwaperfumestyle@gmail.com',
-        contact_phone: '0545010949',
-        contact_whatsapp: '0554169992',
-        contact_address: 'Satellite, Accra',
-        social_facebook: '',
-        social_instagram: '',
-        social_twitter: '',
-        social_tiktok: '',
-        social_snapchat: '',
-        social_youtube: '',
-        primary_color: '#2563eb',
-        secondary_color: '#FBF6F2',
-        currency: 'GHS',
-        currency_symbol: 'GH₵',
-    });
+    const [settings, setSettings] = useState<SiteSettings>(defaultSettings);
     const [content, setContent] = useState<CMSContent[]>([]);
     const [banners, setBanners] = useState<Banner[]>([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
 
-    // CMS Fetching Logic Removed - Content is now managed in code.
-    const fetchCMSData = async () => { };
+    const fetchCMSData = useCallback(async () => {
+        // Skip the network call entirely when env vars are still placeholders —
+        // the app keeps working with hardcoded defaults until Supabase is wired.
+        if (!isSupabaseConfigured) {
+            setLoading(false);
+            return;
+        }
 
-    // Initial load handled by state defaults
-    useEffect(() => {
+        try {
+            const [settingsRes, contentRes, bannersRes] = await Promise.all([
+                supabase.from('site_settings').select('key, value'),
+                supabase
+                    .from('cms_content')
+                    .select('id, section, block_key, title, subtitle, content, image_url, button_text, button_url, metadata, is_active')
+                    .eq('is_active', true),
+                supabase
+                    .from('banners')
+                    .select('*')
+                    .eq('is_active', true),
+            ]);
+
+            if (settingsRes.data && settingsRes.data.length) {
+                const merged: SiteSettings = { ...defaultSettings };
+                for (const row of settingsRes.data as { key: string; value: unknown }[]) {
+                    merged[row.key] = coerceSettingValue(row.value);
+                }
+                setSettings(merged);
+            }
+
+            if (contentRes.data) {
+                setContent(contentRes.data as CMSContent[]);
+            }
+
+            if (bannersRes.data) {
+                setBanners(bannersRes.data as Banner[]);
+            }
+        } catch {
+            // Silent fallback to defaults — homepage already renders valid UI.
+        } finally {
+            setLoading(false);
+        }
     }, []);
+
+    useEffect(() => {
+        fetchCMSData();
+    }, [fetchCMSData]);
 
     const getContent = (section: string, blockKey: string): CMSContent | undefined => {
         return content.find(c => c.section === section && c.block_key === blockKey);

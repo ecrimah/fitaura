@@ -200,9 +200,10 @@ function ShopContent() {
   return (
     <main className="min-h-screen bg-white">
       <PageHero
+        eyebrow="The Edit"
         title="Shop All Products"
-        subtitle="Browse our range of perfumes and fragrances"
-        backgroundImage="/Whisk_6ec7df94ec3ca85b49644810b7fab2ecdr.jpeg"
+        subtitle="Modern lifestyle clothing — gymwear, athleisure and fashion-forward apparel."
+        backgroundImage="/brand/shop-hero.jpg"
       />
 
       {/* Mobile Filter Toggle */}
@@ -247,7 +248,7 @@ function ShopContent() {
                             setIsFilterOpen(false);
                           }}
                           className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${selectedCategory === 'all'
-                            ? 'bg-blue-100 text-blue-700 font-medium'
+                            ? 'bg-sienna-50 text-sienna-500 font-medium'
                             : 'text-gray-700 hover:bg-gray-100'
                             }`}
                         >
@@ -270,7 +271,7 @@ function ShopContent() {
                                   // Don't close filter immediately if exploring hierarchy
                                 }}
                                 className={`w-full text-left px-4 py-2 rounded-lg transition-colors flex justify-between items-center ${isSelected
-                                  ? 'bg-blue-50 text-blue-700 font-medium'
+                                  ? 'bg-cream-100 text-sienna-500 font-medium'
                                   : 'text-gray-700 hover:bg-gray-100'
                                   }`}
                               >
@@ -289,7 +290,7 @@ function ShopContent() {
                                         setIsFilterOpen(false);
                                       }}
                                       className={`w-full text-left px-4 py-1.5 rounded-lg text-sm transition-colors ${selectedCategory === child.slug
-                                        ? 'text-blue-700 font-medium bg-blue-50'
+                                        ? 'text-sienna-500 font-medium bg-cream-100'
                                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                                         }`}
                                     >
@@ -306,7 +307,7 @@ function ShopContent() {
 
                     {/* Price Range */}
                     <div className="border-t border-gray-200 pt-8">
-                      <h3 className="font-semibold text-gray-900 mb-4">Max Price: GH₵{priceRange[1]}</h3>
+                      <h3 className="font-semibold text-gray-900 mb-4">Max Price: ${priceRange[1]}</h3>
                       <div className="space-y-4">
                         <input
                           type="range"
@@ -318,11 +319,11 @@ function ShopContent() {
                             setPriceRange([0, parseInt(e.target.value)]);
                             setPage(1);
                           }}
-                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-700"
+                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-sienna-500"
                         />
                         <div className="flex items-center justify-between text-sm text-gray-600">
-                          <span>GH₵0</span>
-                          <span>GH₵5000+</span>
+                          <span>$0</span>
+                          <span>$5000+</span>
                         </div>
                       </div>
                     </div>
@@ -339,7 +340,7 @@ function ShopContent() {
                               setPage(1);
                             }}
                             className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${selectedRating === rating
-                              ? 'bg-blue-100 text-blue-700'
+                              ? 'bg-sienna-50 text-sienna-500'
                               : 'text-gray-700 hover:bg-gray-100'
                               }`}
                           >
@@ -362,7 +363,7 @@ function ShopContent() {
                         // Re-fetch handled by effect dependencies
                         setIsFilterOpen(false);
                       }}
-                      className="w-full bg-gray-900 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition-colors whitespace-nowrap"
+                      className="w-full bg-sienna-500 hover:bg-sienna-600 text-white py-3 rounded-lg font-medium transition-colors whitespace-nowrap"
                     >
                       Show Results
                     </button>
@@ -385,7 +386,7 @@ function ShopContent() {
                       setSortBy(e.target.value);
                       setPage(1);
                     }}
-                    className="px-4 py-2 pr-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white cursor-pointer"
+                    className="px-4 py-2 pr-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sienna-500 focus:border-sienna-500 text-sm bg-white cursor-pointer"
                   >
                     <option value="popular">Most Popular</option>
                     <option value="new">Newest</option>
@@ -397,14 +398,14 @@ function ShopContent() {
               </div>
 
               {loading ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-x-4 gap-y-8 md:gap-8">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-x-3 gap-y-6 sm:gap-x-4 sm:gap-y-8 lg:gap-8">
                   {[...Array(6)].map((_, i) => (
                     <ProductCardSkeleton key={i} />
                   ))}
                 </div>
               ) : (
                 <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8" data-product-shop>
+                  <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-x-3 gap-y-6 sm:gap-x-4 sm:gap-y-8 lg:gap-8" data-product-shop>
                     {products.map(product => (
                       <ProductCard key={product.id} {...product} />
                     ))}
@@ -424,7 +425,7 @@ function ShopContent() {
                           setSelectedRating(0);
                           setPage(1);
                         }}
-                        className="inline-flex items-center bg-gray-900 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors whitespace-nowrap"
+                        className="inline-flex items-center bg-sienna-500 hover:bg-sienna-600 text-white px-6 py-3 rounded-lg font-medium transition-colors whitespace-nowrap"
                       >
                         Clear All Filters
                       </button>
@@ -470,7 +471,7 @@ function ShopContent() {
 
 export default function ShopPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-12 h-12 border-4 border-blue-700 border-t-transparent rounded-full animate-spin"></div></div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-12 h-12 border-4 border-sienna-500 border-t-transparent rounded-full animate-spin"></div></div>}>
       <ShopContent />
     </Suspense>
   );

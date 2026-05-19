@@ -80,12 +80,12 @@ export default function PrivacySettingsPage() {
       </div>
 
       <div className="max-w-4xl mx-auto p-4 space-y-6">
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+        <div className="bg-cream-100 border border-sienna-100 rounded-xl p-4">
           <div className="flex gap-3">
-            <i className="ri-shield-check-line text-xl text-blue-600 flex-shrink-0 mt-0.5"></i>
+            <i className="ri-shield-check-line text-xl text-sienna-500 flex-shrink-0 mt-0.5"></i>
             <div>
-              <h3 className="font-semibold text-blue-900 mb-1">Your Privacy Matters</h3>
-              <p className="text-sm text-blue-800">
+              <h3 className="font-semibold text-ink-900 mb-1">Your Privacy Matters</h3>
+              <p className="text-sm text-sienna-600">
                 We are committed to protecting your personal information in compliance with GDPR, CCPA, and other privacy regulations.
               </p>
             </div>
@@ -106,7 +106,7 @@ export default function PrivacySettingsPage() {
               <button
                 onClick={handleExportData}
                 disabled={exporting}
-                className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed font-medium whitespace-nowrap"
+                className="px-4 py-2 bg-sienna-500 text-white rounded-lg hover:bg-sienna-600 transition-colors disabled:bg-ink-300 disabled:cursor-not-allowed font-medium whitespace-nowrap"
               >
                 {exporting ? (
                   <>

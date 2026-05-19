@@ -53,18 +53,24 @@ export function isValidEmail(email: string): boolean {
 }
 
 /**
- * Validate Ghana phone number format
+ * Validate a Canadian / North-American phone number.
+ * Accepts: bare 10 digits (e.g. 5874326761), or 11 digits beginning with 1
+ * (e.g. 15874326761), with or without separators / leading +.
  */
-export function isValidGhanaPhone(phone: string): boolean {
+export function isValidCanadianPhone(phone: string): boolean {
     if (!phone || typeof phone !== 'string') return false;
     const cleaned = phone.replace(/\D/g, '');
-    // Valid formats: 0XXXXXXXXX (10 digits), 233XXXXXXXXX (12 digits), or 9 digits without prefix
     return (
-        (cleaned.length === 10 && cleaned.startsWith('0')) ||
-        (cleaned.length === 12 && cleaned.startsWith('233')) ||
-        cleaned.length === 9
+        cleaned.length === 10 ||
+        (cleaned.length === 11 && cleaned.startsWith('1'))
     );
 }
+
+/**
+ * @deprecated Renamed to `isValidCanadianPhone` for FITAURA. Kept as an alias
+ * so any legacy imports keep building. Will be removed in a future release.
+ */
+export const isValidGhanaPhone = isValidCanadianPhone;
 
 /**
  * Sanitize a string for safe use in logs (mask PII)

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#26261F"/>
+      <stop offset="100%" stop-color="#1A1A14"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#E5612D"/>
+      <stop offset="100%" stop-color="#B83F1E"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <g transform="translate(256 280)">
+    <text x="0" y="0" font-family="'Anton','Impact','Bebas Neue',sans-serif" font-size="240" font-weight="400" fill="#FBF7F1" text-anchor="middle" letter-spacing="-4">F<tspan fill="url(#accent)">I</tspan>T</text>
+    <rect x="-110" y="36" width="220" height="6" rx="3" fill="#D14F2B" opacity="0.85"/>
+    <text x="0" y="90" font-family="'Inter','Helvetica','Arial',sans-serif" font-size="34" font-weight="600" fill="#FBF7F1" text-anchor="middle" letter-spacing="14" opacity="0.78">AURA</text>
+  </g>
+</svg>
