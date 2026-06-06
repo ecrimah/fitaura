@@ -3,12 +3,12 @@ import type { Metadata } from 'next';
 import { createClient } from '@supabase/supabase-js';
 import ProductDetailClient from './ProductDetailClient';
 import {
-  StructuredData,
   generateProductSchema,
   generateBreadcrumbSchema,
 } from '@/components/SEOHead';
+import StructuredData from '@/components/StructuredData';
+import { SITE_URL, getFocusKeywords } from '@/lib/seo';
 
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://shopfitaura.com';
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -27,6 +27,7 @@ interface ProductSEO {
   created_at: string;
   updated_at: string;
   category_name: string | null;
+  category_slug: string | null;
   images: { url: string; alt_text: string | null }[];
   in_stock: boolean;
   rating: number | null;
@@ -48,7 +49,7 @@ async function getProductForSEO(slug: string): Promise<ProductSEO | null> {
         id, slug, name, description, short_description, seo_title, seo_description,
         price, compare_at_price, sku, status, created_at, updated_at,
         rating_avg, review_count, quantity, tags,
-        categories(name),
+        categories(name, slug),
         product_images(url, alt_text, position)
       `);
     query = isUUID ? query.or(`id.eq.${slug},slug.eq.${slug}`) : query.eq('slug', slug);
@@ -83,6 +84,7 @@ async function getProductForSEO(slug: string): Promise<ProductSEO | null> {
       created_at: row.created_at,
       updated_at: row.updated_at,
       category_name: row.categories?.name ?? null,
+      category_slug: row.categories?.slug ?? null,
       images,
       in_stock: row.status === 'active' && Number(row.quantity ?? 0) > 0,
       rating: row.rating_avg ? Number(row.rating_avg) : null,
@@ -130,12 +132,9 @@ export async function generateMetadata({
     description: description.slice(0, 160),
     keywords: [
       product.name,
-      product.category_name || 'activewear',
+      product.category_name || 'gymwear',
       ...(product.tags ?? []),
-      'FITAURA',
-      'shop FITAURA',
-      'buy online',
-      'Canada',
+      ...getFocusKeywords('primary', 'commerce'),
     ].filter(Boolean) as string[],
     alternates: { canonical: url },
     openGraph: {
@@ -202,12 +201,18 @@ export default async function ProductDetailPage({
       availability: product.in_stock ? 'in_stock' : 'out_of_stock',
       rating: product.rating || undefined,
       reviewCount: product.review_count || undefined,
+      tags: product.tags ?? undefined,
     });
     breadcrumbSchema = generateBreadcrumbSchema([
       { name: 'Home', url: SITE_URL },
       { name: 'Shop', url: `${SITE_URL}/shop` },
       ...(product.category_name
-        ? [{ name: product.category_name, url: `${SITE_URL}/shop?category=${encodeURIComponent(product.category_name.toLowerCase())}` }]
+        ? [{
+            name: product.category_name,
+            url: `${SITE_URL}/shop?category=${encodeURIComponent(
+              product.category_slug || product.category_name.toLowerCase(),
+            )}`,
+          }]
         : []),
       { name: product.name, url: productUrl },
     ]);

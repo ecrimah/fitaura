@@ -2,14 +2,25 @@ import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { CartProvider } from "@/context/CartContext";
 import { WishlistProvider } from "@/context/WishlistContext";
+import {
+  SITE_NAME,
+  SITE_TAGLINE,
+  SITE_TAGLINE_SHORT,
+  SITE_URL,
+  TWITTER_HANDLE,
+  DEFAULT_OG_IMAGE as OG_IMAGE,
+  DEFAULT_OG_IMAGE_SQUARE as OG_IMAGE_SQUARE,
+  getFocusKeywords,
+} from "@/lib/seo";
+import {
+  generateOrganizationEeatSchema,
+  generateWebsiteSchema,
+  generateOnlineStoreSchema,
+  generateClothingStoreSchema,
+  generateBrandSchema,
+  MERCHANT_RETURN_POLICY,
+} from "@/lib/seo-schemas";
 import "./globals.css";
-
-const SITE_NAME = 'FITAURA';
-const SITE_TAGLINE_SHORT = 'Confidence In Motion.';
-const SITE_TAGLINE = 'Modern lifestyle clothing — gymwear, athleisure and fashion-forward apparel built to empower confidence and comfort. Designed in Calgary, shipping worldwide.';
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://shopfitaura.com';
-const OG_IMAGE = `${SITE_URL}/og-image.png`;
-const OG_IMAGE_SQUARE = `${SITE_URL}/og-image-square.png`;
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -35,23 +46,7 @@ export const metadata: Metadata = {
   creator: SITE_NAME,
   publisher: SITE_NAME,
   referrer: 'origin-when-cross-origin',
-  keywords: [
-    'FITAURA',
-    'shopfitaura',
-    'activewear Canada',
-    'gymwear Canada',
-    'athleisure Calgary',
-    'leggings Canada',
-    'sports bra Canada',
-    'loungewear Calgary',
-    'modern lifestyle clothing',
-    'fashion-forward apparel',
-    'Canadian clothing brand',
-    'sustainable activewear',
-    'Calgary fashion brand',
-    'sculpting leggings',
-    'seamless sports bra',
-  ],
+  keywords: getFocusKeywords('all'),
   category: 'shopping',
   classification: 'Ecommerce, Apparel, Activewear',
   robots: {
@@ -132,17 +127,21 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    site: '@fitaura_ca',
-    creator: '@fitaura_ca',
+    site: TWITTER_HANDLE,
+    creator: TWITTER_HANDLE,
     title: `${SITE_NAME} — ${SITE_TAGLINE_SHORT}`,
     description: SITE_TAGLINE,
     images: [OG_IMAGE],
   },
+  // No `alternates.canonical` here — each page/layout sets its own canonical
+  // via `buildPageMetadata({ path })` so we don't leak the homepage canonical
+  // onto inner routes that forget to override it. The home page sets
+  // `canonical: SITE_URL` in `app/(store)/page.tsx`.
   alternates: {
-    canonical: SITE_URL,
-    languages: {
-      'en-CA': SITE_URL,
-      'x-default': SITE_URL,
+    types: {
+      'application/rss+xml': [
+        { url: `${SITE_URL}/blog/rss.xml`, title: `${SITE_NAME} Journal` },
+      ],
     },
   },
   // `other` is reserved for tags Next.js doesn't already render from the
@@ -161,81 +160,12 @@ export const metadata: Metadata = {
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 const RECAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
 
-const organizationJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'Organization',
-  '@id': `${SITE_URL}/#organization`,
-  name: SITE_NAME,
-  legalName: 'FITAURA',
-  url: SITE_URL,
-  logo: {
-    '@type': 'ImageObject',
-    url: `${SITE_URL}/icon-512.png`,
-    width: 512,
-    height: 512,
-  },
-  image: OG_IMAGE,
-  description: SITE_TAGLINE,
-  foundingDate: '2026',
-  founders: [{ '@type': 'Person', name: 'FITAURA Team' }],
-  address: {
-    '@type': 'PostalAddress',
-    addressLocality: 'Calgary',
-    addressRegion: 'AB',
-    addressCountry: 'CA',
-  },
-  contactPoint: [
-    {
-      '@type': 'ContactPoint',
-      telephone: '+1-587-432-6761',
-      contactType: 'customer service',
-      email: 'hello@shopfitaura.com',
-      areaServed: ['CA', 'US'],
-      availableLanguage: ['en'],
-    },
-  ],
-  sameAs: ['https://instagram.com/fitaura.ca'],
-};
-
-const websiteJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'WebSite',
-  '@id': `${SITE_URL}/#website`,
-  name: SITE_NAME,
-  url: SITE_URL,
-  description: SITE_TAGLINE,
-  publisher: { '@id': `${SITE_URL}/#organization` },
-  inLanguage: 'en-CA',
-  potentialAction: {
-    '@type': 'SearchAction',
-    target: {
-      '@type': 'EntryPoint',
-      urlTemplate: `${SITE_URL}/shop?search={search_term_string}`,
-    },
-    'query-input': 'required name=search_term_string',
-  },
-};
-
-const storeJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'OnlineStore',
-  '@id': `${SITE_URL}/#store`,
-  name: SITE_NAME,
-  url: SITE_URL,
-  description: SITE_TAGLINE,
-  image: OG_IMAGE,
-  logo: `${SITE_URL}/icon-512.png`,
-  paymentAccepted: ['Credit Card', 'Debit Card', 'Apple Pay', 'Google Pay'],
-  currenciesAccepted: 'CAD',
-  parentOrganization: { '@id': `${SITE_URL}/#organization` },
-  address: {
-    '@type': 'PostalAddress',
-    addressLocality: 'Calgary',
-    addressRegion: 'AB',
-    addressCountry: 'CA',
-  },
-  areaServed: [{ '@type': 'Country', name: 'Canada' }, { '@type': 'Country', name: 'United States' }],
-};
+const organizationJsonLd = generateOrganizationEeatSchema();
+const websiteJsonLd = generateWebsiteSchema();
+const storeJsonLd = generateOnlineStoreSchema();
+const clothingStoreJsonLd = generateClothingStoreSchema();
+const brandJsonLd = generateBrandSchema();
+const returnPolicyJsonLd = { '@context': 'https://schema.org', ...MERCHANT_RETURN_POLICY };
 
 export default function RootLayout({
   children,
@@ -270,7 +200,9 @@ export default function RootLayout({
           }}
         />
 
-        {/* Site-wide JSON-LD: Organization, WebSite (with sitelinks search), OnlineStore */}
+        {/* Site-wide JSON-LD: Organization, WebSite (with sitelinks search),
+            OnlineStore, ClothingStore (local SEO). Rendered as raw <script>
+            tags inside <head> so they're discoverable on first byte. */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
@@ -282,6 +214,18 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(storeJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(clothingStoreJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(brandJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(returnPolicyJsonLd) }}
         />
       </head>
 

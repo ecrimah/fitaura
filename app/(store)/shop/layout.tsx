@@ -1,23 +1,40 @@
 import type { Metadata } from 'next';
+import { buildPageMetadata, FOCUS_META_DESCRIPTION } from '@/lib/seo';
+import { fetchActiveProductCount, fetchSeoProductList } from '@/lib/seo-data';
+import StructuredData from '@/components/StructuredData';
+import { generateCollectionPageSchema, generateItemListSchema } from '@/lib/seo-schemas';
 
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://shopfitaura.com';
+export const metadata: Metadata = buildPageMetadata({
+  title: 'Shop Gymwear, Athleisure & Fashion-Forward Apparel | FITAURA',
+  description: FOCUS_META_DESCRIPTION,
+  path: '/shop',
+  ogImageAlt: 'Shop FITAURA gymwear, athleisure and modern lifestyle clothing.',
+  absoluteTitle: true,
+  keywordCluster: ['primary', 'commerce'],
+});
 
-export const metadata: Metadata = {
-  title: { absolute: 'Shop All — Activewear, Athleisure & Lifestyle | FITAURA' },
-  description: 'Shop the full FITAURA collection — sculpting leggings, seamless sports bras, joggers and lifestyle pieces designed in Calgary. Free returns across Canada.',
-  alternates: { canonical: `${SITE_URL}/shop` },
-  openGraph: {
-    title: 'Shop All | FITAURA',
-    description: 'Sculpting leggings, seamless sports bras, joggers and lifestyle pieces designed in Calgary.',
-    url: `${SITE_URL}/shop`,
-    images: [{ url: `${SITE_URL}/og-image.png`, width: 1200, height: 630, alt: 'FITAURA Shop' }],
-    type: 'website',
-    siteName: 'FITAURA',
-    locale: 'en_CA',
-  },
-  twitter: { card: 'summary_large_image', title: 'Shop All | FITAURA', description: 'The full FITAURA collection.', images: [`${SITE_URL}/og-image.png`] },
-};
+export default async function ShopLayout({ children }: { children: React.ReactNode }) {
+  const [count, products] = await Promise.all([
+    fetchActiveProductCount(),
+    fetchSeoProductList(24),
+  ]);
 
-export default function ShopLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  const collectionSchema = generateCollectionPageSchema({
+    name: 'Shop All — Gymwear, Athleisure & Lifestyle',
+    description:
+      'Browse the full FITAURA collection of modern lifestyle clothing — gymwear, athleisure and fashion-forward apparel designed in Calgary.',
+    url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://shopfitaura.com'}/shop`,
+    numberOfItems: count || products.length,
+  });
+
+  const itemListSchema =
+    products.length > 0 ? generateItemListSchema(products) : null;
+
+  return (
+    <>
+      <StructuredData data={collectionSchema} />
+      {itemListSchema ? <StructuredData data={itemListSchema} /> : null}
+      {children}
+    </>
+  );
 }

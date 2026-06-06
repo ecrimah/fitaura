@@ -71,7 +71,10 @@ export default function HeroCarousel({ slides }: HeroCarouselProps) {
                 aria-hidden={current !== idx}
               >
                 <span className="eyebrow mb-3 sm:mb-5 block text-ink-700">{slide.eyebrow}</span>
-                <h1 className="font-display text-[38px] sm:text-[60px] md:text-[76px] lg:text-[92px] xl:text-[104px] leading-[0.9] text-ink-900 tracking-tight">
+                <h1
+                  data-hero-headline
+                  className="font-display text-[38px] sm:text-[60px] md:text-[76px] lg:text-[92px] xl:text-[104px] leading-[0.9] text-ink-900 tracking-tight"
+                >
                   <span className="block">{slide.headlineTop}</span>
                   <span className="block text-sienna-500">{slide.headlineBottom}</span>
                 </h1>

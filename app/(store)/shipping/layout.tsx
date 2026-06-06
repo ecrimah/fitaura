@@ -1,23 +1,15 @@
 import type { Metadata } from 'next';
+import { buildPageMetadata } from '@/lib/seo';
 
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://shopfitaura.com';
-
-export const metadata: Metadata = {
-  title: { absolute: 'Shipping & Delivery — Free in Canada $100+ | FITAURA' },
-  description: 'Free standard shipping across Canada on orders $100+. Expedited and international shipping available. Calgary-based, shipping worldwide.',
-  alternates: { canonical: `${SITE_URL}/shipping` },
-  openGraph: {
-    title: 'Shipping & Delivery | FITAURA',
-    description: 'Free standard shipping across Canada on orders $100+. Worldwide delivery available.',
-    url: `${SITE_URL}/shipping`,
-    images: [{ url: `${SITE_URL}/og-image.png`, width: 1200, height: 630, alt: 'FITAURA Shipping' }],
-    type: 'website',
-    siteName: 'FITAURA',
-    locale: 'en_CA',
-  },
-  twitter: { card: 'summary_large_image', title: 'Shipping & Delivery | FITAURA', description: 'Free standard shipping in Canada $100+.', images: [`${SITE_URL}/og-image.png`] },
-};
+export const metadata: Metadata = buildPageMetadata({
+  title: 'Shipping & Delivery — Gymwear Across Canada | FITAURA',
+  description:
+    'FITAURA ships gymwear and athleisure across Canada. Free standard shipping on orders $120+. Calgary-based modern lifestyle clothing, delivered fast.',
+  path: '/shipping',
+  keywordCluster: 'commerce',
+  absoluteTitle: true,
+});
 
 export default function ShippingLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  return children;
 }

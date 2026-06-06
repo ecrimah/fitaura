@@ -75,7 +75,7 @@ INSERT INTO public.site_settings (key, value, category) VALUES
   ('site_tagline',      to_jsonb('Modern lifestyle clothing — gymwear, athleisure and fashion-forward apparel built to empower confidence and comfort.'::text), 'general'),
   ('site_logo',         to_jsonb('/logo-icon.svg'::text),                                                              'general'),
 
-  ('contact_email',     to_jsonb('hello@shopfitaura.com'::text),                                                       'contact'),
+  ('contact_email',     to_jsonb('Fitaurawear@gmail.com'::text),                                                       'contact'),
   ('contact_phone',     to_jsonb('+1 (587) 432-6761'::text),                                                           'contact'),
   ('contact_whatsapp',  to_jsonb('+15874326761'::text),                                                                'contact'),
   ('contact_address',   to_jsonb('Calgary, Alberta, Canada'::text),                                                    'contact'),

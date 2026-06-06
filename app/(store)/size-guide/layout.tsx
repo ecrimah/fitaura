@@ -1,22 +1,28 @@
 import type { Metadata } from 'next';
+import { buildPageMetadata, SITE_URL } from '@/lib/seo';
+import StructuredData from '@/components/StructuredData';
+import { generateWebPageSchema } from '@/lib/seo-schemas';
 
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://shopfitaura.com';
+export const metadata: Metadata = buildPageMetadata({
+  title: 'Size Guide — Gymwear & Athleisure Fit | FITAURA',
+  description:
+    'Expert FITAURA size guide for gymwear and athleisure — leggings, sports bras, tops and joggers. Measurements and fit notes so your modern lifestyle clothing fits perfectly.',
+  path: '/size-guide',
+  keywordCluster: 'expertise',
+  absoluteTitle: true,
+});
 
-export const metadata: Metadata = {
-  title: { absolute: 'Size Guide — Find Your Perfect Fit | FITAURA' },
-  description: 'FITAURA size guide — measurements for tops, bottoms, sports bras and lounge pieces, with fit notes from real bodies. Find your perfect fit.',
-  alternates: { canonical: `${SITE_URL}/size-guide` },
-  openGraph: {
-    title: 'FITAURA Size Guide',
-    description: 'Measurements for tops, bottoms, sports bras and lounge pieces.',
-    url: `${SITE_URL}/size-guide`,
-    images: [{ url: `${SITE_URL}/og-image.png`, width: 1200, height: 630, alt: 'FITAURA Size Guide' }],
-    type: 'website',
-    siteName: 'FITAURA',
-    locale: 'en_CA',
-  },
-};
+const schema = generateWebPageSchema({
+  name: 'FITAURA Size Guide — Gymwear & Athleisure Fit',
+  description: 'Measurements and fit expertise for FITAURA activewear and lifestyle apparel.',
+  url: `${SITE_URL}/size-guide`,
+});
 
 export default function SizeGuideLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  return (
+    <>
+      <StructuredData data={schema} />
+      {children}
+    </>
+  );
 }

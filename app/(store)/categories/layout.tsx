@@ -1,23 +1,38 @@
 import type { Metadata } from 'next';
+import { buildPageMetadata, SITE_URL } from '@/lib/seo';
+import { fetchSeoCategoryList } from '@/lib/seo-data';
+import StructuredData from '@/components/StructuredData';
+import { generateCollectionPageSchema, generateItemListSchema } from '@/lib/seo-schemas';
 
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://shopfitaura.com';
+export const metadata: Metadata = buildPageMetadata({
+  title: 'Collections — Lounge, Gymwear, Athleisure & Accessories | FITAURA',
+  description:
+    'Browse FITAURA collections — lounge & lifestyle, gymwear, athleisure, new arrivals and accessories. Modern lifestyle clothing designed in Calgary for confidence in comfort.',
+  path: '/categories',
+  ogImageAlt: 'FITAURA collections — gymwear, athleisure and lifestyle apparel.',
+  absoluteTitle: true,
+  keywordCluster: ['primary', 'commerce'],
+});
 
-export const metadata: Metadata = {
-  title: { absolute: 'Shop by Category — Lounge, Lifestyle, New & Accessories | FITAURA' },
-  description: 'Browse FITAURA by category — Lounge & Lifestyle, New Arrivals, Accessories and signature Collections built for confidence and comfort.',
-  alternates: { canonical: `${SITE_URL}/categories` },
-  openGraph: {
-    title: 'Shop by Category | FITAURA',
-    description: 'Lounge, Lifestyle, New Arrivals, Accessories and signature Collections.',
+export default async function CategoriesLayout({ children }: { children: React.ReactNode }) {
+  const categories = await fetchSeoCategoryList();
+
+  const collectionSchema = generateCollectionPageSchema({
+    name: 'FITAURA Collections',
+    description:
+      'Shop by category — lounge, gymwear, athleisure, new arrivals and fashion-forward accessories.',
     url: `${SITE_URL}/categories`,
-    images: [{ url: `${SITE_URL}/og-image.png`, width: 1200, height: 630, alt: 'FITAURA Categories' }],
-    type: 'website',
-    siteName: 'FITAURA',
-    locale: 'en_CA',
-  },
-  twitter: { card: 'summary_large_image', title: 'Shop by Category | FITAURA', description: 'Lounge, Lifestyle, New Arrivals, Accessories and Collections.', images: [`${SITE_URL}/og-image.png`] },
-};
+    numberOfItems: categories.length,
+  });
 
-export default function CategoriesLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  const itemListSchema =
+    categories.length > 0 ? generateItemListSchema(categories) : null;
+
+  return (
+    <>
+      <StructuredData data={collectionSchema} />
+      {itemListSchema ? <StructuredData data={itemListSchema} /> : null}
+      {children}
+    </>
+  );
 }

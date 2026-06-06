@@ -1,11 +1,8 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import type { Metadata } from 'next';
 
-export const metadata: Metadata = {
-  title: { absolute: 'Sustainability — Slow Fashion Made Well | FITAURA' },
-  description: 'How FITAURA approaches fabric, production and longevity. Designed in Calgary to be worn for years, not seasons.',
-};
+// Metadata is defined on the matching `layout.tsx` so we have one
+// canonical source per page. Keep this file as a pure UI component.
 
 const PILLARS = [
   {

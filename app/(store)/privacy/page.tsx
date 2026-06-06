@@ -384,7 +384,7 @@ export default function PrivacyPage() {
                   <i className="ri-mail-line text-sienna-500 text-xl mt-1"></i>
                   <div>
                     <p className="font-medium text-gray-900">Email</p>
-                    <span className="text-sienna-500">hello@shopfitaura.com</span>
+                    <span className="text-sienna-500">Fitaurawear@gmail.com</span>
                   </div>
                 </div>
 

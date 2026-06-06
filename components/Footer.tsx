@@ -39,7 +39,7 @@ export default function Footer() {
   const socialTiktok = getSetting('social_tiktok') || '#';
   const socialFacebook = getSetting('social_facebook') || '';
   const socialYoutube = getSetting('social_youtube') || '';
-  const contactEmail = getSetting('contact_email') || 'hello@shopfitaura.com';
+  const contactEmail = getSetting('contact_email') || 'Fitaurawear@gmail.com';
   const contactPhone = getSetting('contact_phone') || '+1 (587) 432-6761';
   const contactAddress = getSetting('contact_address') || 'Calgary, Alberta, Canada';
 

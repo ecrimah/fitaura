@@ -72,7 +72,7 @@ const defaultSettings: SiteSettings = {
     site_name: 'FITAURA',
     site_tagline: 'Modern lifestyle clothing — gymwear, athleisure and fashion-forward apparel built to empower confidence and comfort.',
     site_logo: '/fitaura-logo.png',
-    contact_email: 'hello@shopfitaura.com',
+    contact_email: 'Fitaurawear@gmail.com',
     contact_phone: '+1 (587) 432-6761',
     contact_whatsapp: '+15874326761',
     contact_address: 'Calgary, Alberta, Canada',

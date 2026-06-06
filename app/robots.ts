@@ -1,14 +1,41 @@
-import { MetadataRoute } from 'next';
+import type { MetadataRoute } from 'next';
+import { SITE_URL } from '@/lib/seo';
 
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://shopfitaura.com';
-
+/**
+ * Robots.txt for FITAURA.
+ *
+ * Strategy:
+ *  - Allow crawling of every public storefront route (home, shop, product,
+ *    categories, blog, marketing, policies).
+ *  - Disallow every private/transactional surface (admin, API, auth, account,
+ *    cart, checkout, wishlist, payment, help, support, order receipts, PWA
+ *    install pages).
+ *  - Explicitly allow Googlebot-Image to crawl brand + OG assets so product
+ *    photography ranks in Google Images.
+ *  - Block aggressive SEO scrapers that hammer the site without value.
+ */
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
-      // Default rule for all bots: allow shopping content, block private + transactional surfaces
       {
         userAgent: '*',
-        allow: ['/', '/shop', '/categories', '/category/', '/product/', '/blog', '/about', '/contact', '/sustainability', '/size-guide', '/care-guide', '/faqs', '/shipping', '/returns', '/privacy', '/terms'],
+        allow: [
+          '/',
+          '/shop',
+          '/categories',
+          '/product/',
+          '/blog',
+          '/about',
+          '/contact',
+          '/sustainability',
+          '/size-guide',
+          '/care-guide',
+          '/faqs',
+          '/shipping',
+          '/returns',
+          '/privacy',
+          '/terms',
+        ],
         disallow: [
           '/admin',
           '/admin/',
@@ -29,19 +56,28 @@ export default function robots(): MetadataRoute.Robots {
           '/help/',
           '/support/',
           '/returns/confirmation',
+          // Strip out any tracking/source query params that PWA shortcuts use
+          // so we don't get duplicate URLs in the index.
           '/*?source=pwa*',
           '/*?source=pwa-shortcut*',
+          '/*?utm_*',
         ],
       },
-      // Friendly explicit allow for Googlebot-Image to index product photography
       {
         userAgent: 'Googlebot-Image',
-        allow: ['/brand/', '/og-image.png', '/og-image-square.png', '/icon-512.png', '/apple-touch-icon.png'],
+        allow: [
+          '/brand/',
+          '/og-image.png',
+          '/og-image-square.png',
+          '/icon-192.png',
+          '/icon-512.png',
+          '/apple-touch-icon.png',
+          '/favicon-96x96.png',
+        ],
         disallow: ['/admin/', '/api/'],
       },
-      // Block aggressive SEO/scraping bots
       {
-        userAgent: ['SemrushBot', 'AhrefsBot', 'MJ12bot', 'DotBot', 'PetalBot'],
+        userAgent: ['SemrushBot', 'AhrefsBot', 'MJ12bot', 'DotBot', 'PetalBot', 'BLEXBot'],
         disallow: '/',
       },
     ],

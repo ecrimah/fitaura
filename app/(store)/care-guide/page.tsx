@@ -1,11 +1,8 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import type { Metadata } from 'next';
 
-export const metadata: Metadata = {
-  title: { absolute: 'Care Guide — How to Keep Your FITAURA' },
-  description: 'How to wash, dry and store your FITAURA pieces so they keep their shape, stretch and colour for years.',
-};
+// Metadata is defined on the matching `layout.tsx` so we have one
+// canonical source per page. Keep this file as a pure UI component.
 
 const STEPS = [
   {
